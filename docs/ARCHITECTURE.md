@@ -51,3 +51,21 @@ When an application obtains a ChangeContext from a ChangeDomain, then runs a Cha
 An Object can only be associated with one ChangeDomain.  If an attempt is made to wrap an Object in a ChangeProxy from another ChangeDomain, the result will be an error.
 
 While the application can explicitly create ChangeDomains, there is also an implicit global ChangeDomain, that is used by default.  Most applications will likely stick to using that global ChangeDomain, but if an application for some reason needs to "segment" changes, it can use this ChangeDomain mechanism.
+
+### Cached Function
+
+A **Cached Function** is a particular application of the system.  A Cached Function, when initially evaluated, executes with its own Change Context.  This means that it results in a value, which is cached, plus a registered callback which invalidates the cached value if any of the function's dependencies change.  When the function is evaluated again, it either returns the cached value, or it re-evaluates within another ChangeContext if its cached value was invalidated.
+
+Additionally, a Cached Function acts as a Change Source.  If a Change Context is in place when the Cached Function is called, then the context's ChangeListener will subscribe to that Change Source.  If the Cached Function is invalidated by a notification, then it will also notify its own Change Source.
+
+This can be used as a way to prevent too much "fan out" in dependencies.  For example, if A and B both call C, and C depends on D, E and F, then normally both A and B would have dependencies on D, E, and F.  But if C becomes a Cached Function, it effectively "gathers up" its own dependencies, so that A and B only depend on C, and C depends on D, E, and F.
+
+The function wrapped by a Cached Function must take no parameters.  A Cached Function is obtained from a ChangeContext by passing in that underlying function.  A Cached Function will automatically wrap its result in a ChangeProxy.
+
+## ChangeSource Details
+
+The bulk of the system is the work done by the ChangeProxies and the ChangeSources they expose.  These are detailed in [ChangeSources](./change-sources.md)
+
+## Technical Design
+
+The API and internal design are [detailed here](./design.md)
