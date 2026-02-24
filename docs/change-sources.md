@@ -89,6 +89,8 @@ All accessors subscribe to ArrayChangeSource, while all mutators notify the Arra
 
 No special treatment is needed for array methods - they will ultimately call the underlying getters and setters, triggering the appropriate ArrayChangeSource behavior.
 
+When passing through Proxy calls to the target (using Reflect, for example), keep in mind that the "this" must refer to the Proxy receiver, not the target
+
 ## Map Change Sources
 
 Maps inherit the ChangeSources and behaviors from Object, described above.  Maps also have these additional ChangeSources:
@@ -118,7 +120,7 @@ Map functions have these additional behaviors:
 * keys(), values(), entries(), forEach(), [Symbol.iterator]
     * subscribe to MapKeysChangeSource
 
-When passing through calls to the target (using Reflect, for example), keep in mind that the "this" must refer to the target, not the Proxy receiver.
+When passing through Proxy calls to the target (using Reflect, for example), keep in mind that the "this" must refer to the target, not the Proxy receiver.
 
 ## Set Change Sources
 
