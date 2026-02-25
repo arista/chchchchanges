@@ -36,7 +36,7 @@ The proxy creation and type-dispatch framework. Implements the object-to-proxy m
 
 Tests: primitives pass through unchanged, same proxy returned for same object, proxy-target Symbol navigation works, cross-domain wrap throws, enableChanges is idempotent.
 
-### Step 5: Object ChangeProxy
+### Step 5: Object ChangeProxy ✅
 
 The most complex handler — implements all Object proxy traps per the spec. Each trap either subscribes to or notifies the appropriate ChangeSources (ObjectPropertyChangeSource, ObjectHasPropertyChangeSource, ObjectOwnKeysChangeSource, ObjectOwnPropertyDescriptorChangeSource, ObjectPrototypeOfChangeSource, ObjectIsExtensibleChangeSource). Return values and arguments are passed through `enableChanges` to auto-wrap nested objects. The getter-with-no-setter optimization (wrapping in a CachedFunction) is deferred to Step 9.
 
