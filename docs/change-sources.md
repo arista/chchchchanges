@@ -171,3 +171,17 @@ FIXME - are there other objects that should be treated specially?
 ### Extension Mechanism???
 
 FIXME - allow an application to define its own ChangeProxy behaviors?
+
+## Cached Functions
+
+[Cached Functions](./design.md) are functions that can also act as ChangeSources.  The ChangeDomain.createCachedFunction call internally creates a CachedFunction structure that is available to the cachingFunction (which is the function called by the application).
+
+When CachedFunction.cachingFunction is called:
+
+* subscribe to CachingFunction.changeSource
+
+When the cachingFunction runs and finds that cacheValid is false, it will rerun the original function within ChangeDomain.detectChanges().  The after callback passed to detectChanges should
+
+* mark the CachedFunction as invalid
+* notify the CachingFunction.changeSource
+

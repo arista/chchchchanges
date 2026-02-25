@@ -14,11 +14,6 @@ Most naming inconsistencies, missing behaviors, and ambiguities identified in th
 
 The architecture document is clear and well-organized.
 
-### Cached Function - Open Questions
-
-- Cached Functions act as ChangeSources, but the design section shows `CachedFunction.changeSource: ChangeSource|null` without detailing how the CachedFunction subscribes to the current ChangeContext when it is called. A sentence or two on this mechanism would help.
-- What happens if a Cached Function's dependency changes while it is mid-evaluation? Is re-entrancy prevented?
-
 ### ChangeDomain Isolation
 
 The single-ownership rule (an Object belongs to one ChangeDomain) is clear. One question: if a change-enabled Object from Domain A is passed as an argument to a function on a change-enabled Object from Domain B, what happens? The ChangeProxy for Domain B would attempt to wrap it, which should detect the existing Domain A association and error. This seems correct but is worth an explicit note or test case.
@@ -88,6 +83,8 @@ The following issues were identified and have been fixed in the spec:
 15. ~~afterNotifications iteration strategy undefined~~ - specified as index-based iteration
 16. ~~Cross-domain transaction interaction~~ - modifying objects in another ChangeDomain during a transaction is now an error
 17. ~~ChangeSource cleanup ordering~~ - clarified that cleanup happens strictly after all afterNotifications
+18. ~~CachedFunction ChangeContext subscription mechanism~~ - added Cached Functions section to change-sources.md detailing subscription and invalidation behavior
+19. ~~Re-entrancy during detection~~ - design.md now recommends against mutations during `detectChanges` and `createCachedFunction`, since notifications are suppressed
 
 ---
 
@@ -97,4 +94,3 @@ The following issues were identified and have been fixed in the spec:
 2. Determine which additional object types need special handling (Date, WeakMap/WeakSet, TypedArrays, Promise)
 3. Consider recursion depth limits for nested before-callbacks
 4. Consider the extension mechanism (FIXME in change-sources.md)
-5. Detail the CachedFunction ChangeContext subscription mechanism
