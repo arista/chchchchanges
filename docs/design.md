@@ -109,9 +109,9 @@ MapChangeSources extends ObjectChangeSources {
 
 SetChangeSources extends ObjectChangeSources {
   setHas: Map<any, ChangeSource>|null
-  mapSize: ChangeSource|null
-  mapKeys: ChangeSource|null
-  mapClear: ChangeSource|null
+  setSize: ChangeSource|null
+  setKeys: ChangeSource|null
+  setClear: ChangeSource|null
 }
 
 
@@ -140,7 +140,6 @@ ChangeSource {
 ChangeSubscription {
   source: ChangeSource
   listener: ChangeListener
-  source: ChangeSourceLocator
 }
 
 // Represents an entity interested in receiving notifications from ChangeSources.  A ChangeListener can listen to multiple ChangeSources.  A ChangeListener can only be used once - once notified, a ChangeListener must be replaced with a new ChangeListener.

@@ -4,19 +4,22 @@ The notification process is more involved than simply calling the callback funct
 
 The overall notification process is represented by a ChangeTransaction.  The ChangeTransaction is scoped to a ChangeDomain, which allows only one ChangeTransaction to be in process at a time.  When a Proxy trap intercepts a call that is going to result in notifications, it wraps its work in a ChangeTransaction, or uses the ChangeTransaction already in place.  It does this using the withTransaction convenience function:
 
-For example, an Object get() trap might look like this:
+For example, an Object set() trap might look like this:
 
 ```
-if(changeDomain.changeContext == null) {
-  // Perform notifications
-  t.notify(the property ChangeSource)
-  t.notify(the hasProperty ChangeSource)
-  t.notify(the ownKeys ChangeSource)
-  
+if(changeDomain.changeContext != null) {
+  // Inside a detectChanges call - skip notifications, just pass through
   pass call to target
 }
 else {
-  pass call to target
+  changeDomain.withTransaction(t => {
+    // Perform notifications before calling the target
+    t.notify(the property ChangeSource)
+    t.notify(the hasProperty ChangeSource)
+    t.notify(the ownKeys ChangeSource)
+
+    pass call to target
+  })
 }
 ```
 

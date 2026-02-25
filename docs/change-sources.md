@@ -67,11 +67,11 @@ Proxy traps:
     * notify ObjectOwnKeysChangeSource
     * notify ObjectOwnPropertyDescriptorChangeSource[prop]
 * getOwnPropertyDescriptor(prop)
-    * subscribe to ObjectOwnPropertyChangeSource[prop]
+    * subscribe to ObjectOwnPropertyDescriptorChangeSource[prop]
 * getPrototypeOf()
-    * subscribe to ObjectPropertyChangeSource
+    * subscribe to ObjectPrototypeOfChangeSource
 * setPrototypeOf()
-    * notify ObjectPropertyChangeSource
+    * notify ObjectPrototypeOfChangeSource
 * isExtensible()
     * subscribe to ObjectIsExtensibleChangeSource
 * preventExtensions()
@@ -79,7 +79,9 @@ Proxy traps:
 * ownKeys()
     * subscribe to ObjectOwnKeysChangeSource
 * apply()
+    * no change tracking - pass through to target
 * construct()
+    * no change tracking - pass through to target
 
 ### Array Change Sources
 
@@ -111,8 +113,11 @@ Maps inherit the ChangeSources and behaviors from Object, described above.  Maps
 
 Map functions have these additional behaviors:
 
-* get(key), has(key)
+* get(key)
     * subscribe to MapKeyChangeSource[key]
+    * subscribe to MapClearChangeSource
+* has(key)
+    * subscribe to MapHasKeyChangeSource[key]
     * subscribe to MapClearChangeSource
 * size
     * subscribe to MapSizeChangeSource
@@ -141,9 +146,12 @@ ChangeSources:
 * SetKeysChangeSource
 * SetClearChangeSource
 
+* has(key)
+    * subscribe to SetHasChangeSource[key]
+    * subscribe to SetClearChangeSource
 * size
     * subscribe to SetSizeChangeSource
-* add(key, val), delete(key)
+* add(key), delete(key)
     * notify SetHasKeyChangeSource[key]
     * notify SetSizeChangeSource
     * notify SetKeysChangeSource
@@ -153,6 +161,8 @@ ChangeSources:
     * notify SetClearChangeSource
 * values(), entries(), forEach(), [Symbol.iterator]
     * subscribe to SetKeysChangeSource
+
+When passing through Proxy calls to the target (using Reflect, for example), keep in mind that the "this" must refer to the target, not the Proxy receiver.
 
 ### Others???
 
