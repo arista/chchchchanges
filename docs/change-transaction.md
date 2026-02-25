@@ -47,7 +47,7 @@ Once the final withTransaction() completes, it will call complete() on the trans
 * go through all of the afterNotifications registered with the transaction
     * call the afterNotification callback
 * keep in mind that the callbacks could themselves be triggering more changes and notifications, which means that the list of afterNotifications might continue to grow
-* go through each of the transaction's set of ChangeSources
+* only after all afterNotifications have been processed (including any added during processing), go through each of the transaction's set of ChangeSources
     * for each ChangeSource, if it has no listeners, call its remove() method
 
 TBD - figure out a way to detect dependency cycles

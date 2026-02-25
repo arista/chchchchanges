@@ -36,7 +36,7 @@ A **ChangeProxy** is a JS Proxy that intercepts application calls to an Object, 
 
 The main idea is that a Change-Sensitive Function can access application objects without knowing about ChangeSources, ChangeListeners, or even that this library is involved.  As long as all the values accessed by the function are wrapped in ChangeProxies, the function will be none the wiser.
 
-A key property of the ChangeProxy is to make sure all values it returns to the application are themselves wrapped in ChangeProxies.  When a ChangeProxy intercepts a call, it will wrap all of its incoming arguments in ChangeProxies, and wrap its return value in a ChangeProxy.  Ideally, the application would only need to wrap one "root" object in a ChangeProxy, and all other objects the application encounters will automatically be wrapped as well.
+A key property of the ChangeProxy is to make sure all values it returns to the application are themselves change-enabled.  When a ChangeProxy intercepts a call, it will pass all of its incoming arguments and its return value through enableChanges.  Non-Object values (primitives) will pass through unchanged, while Objects will be wrapped in ChangeProxies.  Ideally, the application would only need to wrap one "root" object in a ChangeProxy, and all other objects the application encounters will automatically be wrapped as well.
 
 Once a ChangeProxy has been created for an Object, the two will be permanently associated with each other.  Special Symbol getters will allow the library to check for the existence of an Object's Proxy, and to navigate back and forth between the original Object and its Proxy.  Once the association has been made, "wrapping" an Object in a Proxy should essentially become a noop.
 
@@ -66,7 +66,7 @@ Additionally, a Cached Function acts as a Change Source.  If a Change Context is
 
 This can be used as a way to prevent too much "fan out" in dependencies.  For example, if A and B both call C, and C depends on D, E and F, then normally both A and B would have dependencies on D, E, and F.  But if C becomes a Cached Function, it effectively "gathers up" its own dependencies, so that A and B only depend on C, and C depends on D, E, and F.
 
-The function wrapped by a Cached Function must take no parameters.  A Cached Function is obtained from a ChangeContext by passing in that underlying function.  A Cached Function will automatically wrap its result in a ChangeProxy.
+The function wrapped by a Cached Function must take no parameters.  A Cached Function is obtained from a ChangeDomain by passing in that underlying function.  A Cached Function will automatically wrap its result in a ChangeProxy.
 
 ## ChangeSource Details
 
