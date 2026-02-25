@@ -1,6 +1,7 @@
 import type { ChangeCallback } from "./change-callback.js"
 import { ChangeListener } from "./change-source.js"
 import { ChangeTransaction } from "./change-transaction.js"
+import { enableChanges } from "./change-proxy.js"
 
 export interface ChangeDetecting<T> {
   result: T
@@ -18,6 +19,10 @@ export class ChangeContext {
 export class ChangeDomain {
   changeContext: ChangeContext | null = null
   private transaction: ChangeTransaction | null = null
+
+  enableChanges<T>(val: T): T {
+    return enableChanges(val, this)
+  }
 
   withTransaction<R>(f: (t: ChangeTransaction) => R): R {
     const isNew = this.transaction == null

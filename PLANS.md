@@ -4,7 +4,7 @@ This document tracks the roadmap and planned features for chchchchanges
 
 ## Current Focus
 
-Implement Step 1 from the Initial Development Plan below.  Implement on branch nsa-changesourcelistener
+Implement Step 4 from the Initial Development Plan below.  Implement on branch nsa-initial-4
 
 ## Initial Development Plan
 
