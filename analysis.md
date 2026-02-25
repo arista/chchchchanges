@@ -14,10 +14,6 @@ Most naming inconsistencies, missing behaviors, and ambiguities identified in th
 
 The architecture document is clear and well-organized.
 
-### ChangeDomain Isolation
-
-The single-ownership rule (an Object belongs to one ChangeDomain) is clear. One question: if a change-enabled Object from Domain A is passed as an argument to a function on a change-enabled Object from Domain B, what happens? The ChangeProxy for Domain B would attempt to wrap it, which should detect the existing Domain A association and error. This seems correct but is worth an explicit note or test case.
-
 ---
 
 ## Change Sources (change-sources.md)
@@ -85,6 +81,7 @@ The following issues were identified and have been fixed in the spec:
 17. ~~ChangeSource cleanup ordering~~ - clarified that cleanup happens strictly after all afterNotifications
 18. ~~CachedFunction ChangeContext subscription mechanism~~ - added Cached Functions section to change-sources.md detailing subscription and invalidation behavior
 19. ~~Re-entrancy during detection~~ - design.md now recommends against mutations during `detectChanges` and `createCachedFunction`, since notifications are suppressed
+20. ~~ChangeDomain isolation cross-domain error~~ - `enableChanges` now explicitly throws an error if the value is already change-enabled in another ChangeDomain
 
 ---
 
