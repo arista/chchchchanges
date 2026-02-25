@@ -10,7 +10,7 @@ Implement Step 1 from the Initial Development Plan below.  Implement on branch n
 
 The implementation is broken into 10 steps, each intended as a reviewable unit. Each step builds on the previous ones and includes its own tests.
 
-### Step 1: ChangeSource and ChangeListener
+### Step 1: ChangeSource and ChangeListener ✅
 
 The foundational pub/sub primitives. A ChangeSource holds a set of ChangeListeners and can list-and-clear them. A ChangeListener tracks its subscriptions across multiple ChangeSources, supports a `wasNotified` flag, and can unsubscribe from all sources at once.
 
