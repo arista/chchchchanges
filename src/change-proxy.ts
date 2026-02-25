@@ -1,4 +1,5 @@
 import type { ChangeDomain } from "./change-domain.js"
+import { createObjectHandler } from "./object-handler.js"
 
 export const CHANGE_PROXY_STATE = Symbol.for("chchchchanges.proxyState")
 
@@ -57,15 +58,6 @@ export function enableChanges<T>(val: T, domain: ChangeDomain): T {
 }
 
 function createHandler(_target: object, state: ChangeProxyState): ProxyHandler<object> {
-  // Step 5-8 will add type-specific dispatch here
-  return createBaseHandler(state)
-}
-
-export function createBaseHandler(state: ChangeProxyState): ProxyHandler<object> {
-  return {
-    get(target, prop, receiver) {
-      if (prop === CHANGE_PROXY_STATE) return state
-      return Reflect.get(target, prop, receiver)
-    },
-  }
+  // Steps 6-8 will add Array, Map, Set dispatch before the default
+  return createObjectHandler(state)
 }
