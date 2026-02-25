@@ -4,13 +4,13 @@ This document tracks the roadmap and planned features for chchchchanges
 
 ## Current Focus
 
-Come up with a plan for the initial implementation according to the current specs, broken down into steps that make sense to review as units.  List the steps in this PLANS.md file under heading Initial Development Plan.  Put this on branch nsa-initial-plan
+Implement Step 1 from the Initial Development Plan below.  Implement on branch nsa-changesourcelistener
 
 ## Initial Development Plan
 
 The implementation is broken into 10 steps, each intended as a reviewable unit. Each step builds on the previous ones and includes its own tests.
 
-### Step 1: ChangeSource and ChangeListener
+### Step 1: ChangeSource and ChangeListener ✅
 
 The foundational pub/sub primitives. A ChangeSource holds a set of ChangeListeners and can list-and-clear them. A ChangeListener tracks its subscriptions across multiple ChangeSources, supports a `wasNotified` flag, and can unsubscribe from all sources at once.
 
