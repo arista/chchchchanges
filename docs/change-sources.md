@@ -21,7 +21,15 @@ Unless otherwise specified, once it has executed the specified behaviors, the Ch
 
 Some Object types also intercept specific function calls, aka "function traps".  Where those are specified, that means that calling get({function name}) needs to return a Proxied wrapper around the underlying function, and the specified behavior should be invoked when that Proxy's apply() method is called.
 
-## Object Change Sources
+## Removing Change Sources
+
+Over time, an Object can build up many ChangeSources for various properties and other items.  If those ChangeSources are not removed, they can eventually form a memory leak.
+
+For that reason, each ChangeSource has a remove() function that removes it from an Object.  At the end of each ChangeTransaction, all of the ChangeSources involved in that transaction are checked to see if they are empty, and their remove() functions are called if so.
+
+## Change Source Types
+
+### Object Change Sources
 
 These apply to "generic" Objects, that aren't covered by other cases.
 
@@ -73,7 +81,7 @@ Proxy traps:
 * apply()
 * construct()
 
-## Array Change Sources
+### Array Change Sources
 
 Arrays can be treated the same as Objects, since all Array operations translate into the more primitive operations handled by the Object rules described above.
 
@@ -91,7 +99,7 @@ No special treatment is needed for array methods - they will ultimately call the
 
 When passing through Proxy calls to the target (using Reflect, for example), keep in mind that the "this" must refer to the Proxy receiver, not the target
 
-## Map Change Sources
+### Map Change Sources
 
 Maps inherit the ChangeSources and behaviors from Object, described above.  Maps also have these additional ChangeSources:
 
@@ -122,7 +130,7 @@ Map functions have these additional behaviors:
 
 When passing through Proxy calls to the target (using Reflect, for example), keep in mind that the "this" must refer to the target, not the Proxy receiver.
 
-## Set Change Sources
+### Set Change Sources
 
 Similar to Maps, Sets also inherit from Object, but add Set-specific ChangeSources and function behaviors:
 
@@ -146,10 +154,10 @@ ChangeSources:
 * values(), entries(), forEach(), [Symbol.iterator]
     * subscribe to SetKeysChangeSource
 
-## Others???
+### Others???
 
 FIXME - are there other objects that should be treated specially?
 
-## Extension Mechanism???
+### Extension Mechanism???
 
 FIXME - allow an application to define its own ChangeProxy behaviors?

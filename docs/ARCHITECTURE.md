@@ -24,9 +24,11 @@ A **ChangeSource** represents a value that can potentially become a dependency o
 
 The primary function of a ChangeSource is to publish a notification when its underlying value changes.  The notification is received by **ChangeListener**s that have been registered with the ChangeSource.  A function with dependencies would, for example, have an associated ChangeListener subscribed to each of the relevant ChangeSources.
 
-Whenever a ChangeSource publishes to its subscribed ChangeListeners, it clears that list of listeners.  ChangeListeners need to re-subscribe to the ChangeSource if they want further notifications.
+Whenever a ChangeSource publishes to its subscribed ChangeListeners, it clears that list of listeners.  New ChangeListeners need to be re-created and subscribed to the ChangeSource if they want further notifications.
 
 The main use case is a function that runs, while the system subscribes ChangeListeners to any ChangeSources it identifies as dependencies along the way.  If a ChangeSource publishes a change, then it is expected that the function will be re-run, thereby re-subscribing a new list of ChangeListeners.
+
+ChangeListeners have the option of being notified before a change is made, after a change is made, or both.
 
 ### ChangeProxy
 
@@ -51,6 +53,10 @@ When an application obtains a ChangeContext from a ChangeDomain, then runs a Cha
 An Object can only be associated with one ChangeDomain.  If an attempt is made to wrap an Object in a ChangeProxy from another ChangeDomain, the result will be an error.
 
 While the application can explicitly create ChangeDomains, there is also an implicit global ChangeDomain, that is used by default.  Most applications will likely stick to using that global ChangeDomain, but if an application for some reason needs to "segment" changes, it can use this ChangeDomain mechanism.
+
+### ChangeTransaction
+
+When a ChangeProxy detects change that will be notified through ChangeSources, that process can actually get fairly complex.  The process is encapsulated by a [ChangeTransaction](./change-transaction.md).
 
 ### Cached Function
 
