@@ -24,7 +24,7 @@ The notification orchestration layer. Implements `notify(source)` which processe
 
 Tests: before-callback runs immediately with access to old values, after-callback runs on complete, nested mutations during before-callbacks reuse the transaction, after-callbacks added during iteration are processed, empty ChangeSources are removed after completion, wasNotified prevents double-notification.
 
-### Step 3: ChangeDomain, ChangeContext, and detectChanges
+### Step 3: ChangeDomain, ChangeContext, and detectChanges ✅
 
 The coordination layer. ChangeDomain manages a current ChangeContext and current ChangeTransaction. `withTransaction` creates or reuses a transaction, skipping entirely if a ChangeContext is active (inside detectChanges). `detectChanges` installs a ChangeContext, runs the function, and returns a `ChangeDetecting` result with `remove()` for cleanup.
 
