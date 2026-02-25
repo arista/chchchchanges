@@ -21,7 +21,15 @@ Unless otherwise specified, once it has executed the specified behaviors, the Ch
 
 Some Object types also intercept specific function calls, aka "function traps".  Where those are specified, that means that calling get({function name}) needs to return a Proxied wrapper around the underlying function, and the specified behavior should be invoked when that Proxy's apply() method is called.
 
-## Object Change Sources
+## Removing Change Sources
+
+Over time, an Object can build up many ChangeSources for various properties and other items.  If those ChangeSources are not removed, they can eventually form a memory leak.
+
+For that reason, each ChangeSource has a remove() function that removes it from an Object.  At the end of each ChangeTransaction, all of the ChangeSources involved in that transaction are checked to see if they are empty, and their remove() functions are called if so.
+
+## Change Source Types
+
+### Object Change Sources
 
 These apply to "generic" Objects, that aren't covered by other cases.
 
@@ -37,7 +45,12 @@ ChangeSources:
 Proxy traps:
 
 * get(prop)
-    * subscribe to ObjectPropertyChangeSource[prop]
+    * if the property is defined as a getter with no setter:
+        * wrap the getter in a Cached Function (if not already wrapped)
+        * subscribe to the Cached Function's ChangeSource
+        * evaluate the CachedFunction
+    * else
+        * subscribe to ObjectPropertyChangeSource[prop]
 * has(prop)
     * subscribe to ObjectHasPropertyChangeSource[prop]
 * set(prop, value)
@@ -54,11 +67,11 @@ Proxy traps:
     * notify ObjectOwnKeysChangeSource
     * notify ObjectOwnPropertyDescriptorChangeSource[prop]
 * getOwnPropertyDescriptor(prop)
-    * subscribe to ObjectOwnPropertyChangeSource[prop]
+    * subscribe to ObjectOwnPropertyDescriptorChangeSource[prop]
 * getPrototypeOf()
-    * subscribe to ObjectPropertyChangeSource
+    * subscribe to ObjectPrototypeOfChangeSource
 * setPrototypeOf()
-    * notify ObjectPropertyChangeSource
+    * notify ObjectPrototypeOfChangeSource
 * isExtensible()
     * subscribe to ObjectIsExtensibleChangeSource
 * preventExtensions()
@@ -66,95 +79,95 @@ Proxy traps:
 * ownKeys()
     * subscribe to ObjectOwnKeysChangeSource
 * apply()
+    * no change tracking - pass through to target
 * construct()
+    * no change tracking - pass through to target
 
-## Array Change Sources
+### Array Change Sources
 
-Arrays inherit the same ChangeSources and proxy trap behaviors from Objects, while adding some sources and behaviors:
+Arrays can be treated the same as Objects, since all Array operations translate into the more primitive operations handled by the Object rules described above.
+
+However, this can be an inefficient approach, since it will likely result in many calls to subscribe to individual properties (i.e., array indexes) and many calls to notify subscribers, especially in functions that perform a lot of modifications, like sort or splice.
+
+This level of granularity make sense for applications that are getting and setting individual array elements.  However, applications are more likely simply iterating through the array, once the array has been built up.
+
+With that in mind, Arrays only have a single ChangeSource:
+
+* ArrayChangeSource
+
+All accessors subscribe to ArrayChangeSource, while all mutators notify the ArrayChangeSource.
+
+No special treatment is needed for array methods - they will ultimately call the underlying getters and setters, triggering the appropriate ArrayChangeSource behavior.
+
+When passing through Proxy calls to the target (using Reflect, for example), keep in mind that the "this" must refer to the Proxy receiver, not the target
+
+### Map Change Sources
+
+Maps inherit the ChangeSources and behaviors from Object, described above.  Maps also have these additional ChangeSources:
+
+* MapKeyChangeSource[key]
+* MapHasKeyChangeSource[key]
+* MapSizeChangeSource
+* MapKeysChangeSource
+* MapClearChangeSource
+
+Map functions have these additional behaviors:
+
+* get(key)
+    * subscribe to MapKeyChangeSource[key]
+    * subscribe to MapClearChangeSource
+* has(key)
+    * subscribe to MapHasKeyChangeSource[key]
+    * subscribe to MapClearChangeSource
+* size
+    * subscribe to MapSizeChangeSource
+* set(key, val), delete(key)
+    * notify MapKeyChangeSource[key]
+    * notify MapHasKeyChangeSource[key]
+    * notify MapSizeChangeSource
+    * notify MapKeysChangeSource
+* clear()
+    * notify MapSizeChangeSource
+    * notify MapKeysChangeSource
+    * notify MapClearChangeSource
+* keys(), values(), entries(), forEach(), [Symbol.iterator]
+    * subscribe to MapKeysChangeSource
+
+When passing through Proxy calls to the target (using Reflect, for example), keep in mind that the "this" must refer to the target, not the Proxy receiver.
+
+### Set Change Sources
+
+Similar to Maps, Sets also inherit from Object, but add Set-specific ChangeSources and function behaviors:
 
 ChangeSources:
 
-* ArrayLengthChangeSource
-* ArrayElementChangeSource[index]
-* ArrayIteratorChangeSource
+* SetHasChangeSource[key]
+* SetSizeChangeSource
+* SetKeysChangeSource
+* SetClearChangeSource
 
+* has(key)
+    * subscribe to SetHasChangeSource[key]
+    * subscribe to SetClearChangeSource
+* size
+    * subscribe to SetSizeChangeSource
+* add(key), delete(key)
+    * notify SetHasKeyChangeSource[key]
+    * notify SetSizeChangeSource
+    * notify SetKeysChangeSource
+* clear()
+    * notify SetSizeChangeSource
+    * notify SetKeysChangeSource
+    * notify SetClearChangeSource
+* values(), entries(), forEach(), [Symbol.iterator]
+    * subscribe to SetKeysChangeSource
 
+When passing through Proxy calls to the target (using Reflect, for example), keep in mind that the "this" must refer to the target, not the Proxy receiver.
 
-FIXME - specify this
-
-## Map Change Sources
-
-FIXME - specify this
-
-## Set Change Sources
-
-FIXME - specify this
-
-## Others???
+### Others???
 
 FIXME - are there other objects that should be treated specially?
 
-## Extension Mechanism???
+### Extension Mechanism???
 
 FIXME - allow an application to define its own ChangeProxy behaviors?
-
----
-
-## Implementation Notes
-
-### Arrays
-
-Arrays can largely reuse the Object rules. Unlike Map/Set, array methods like `push`, `pop`, `splice`, etc. operate on properties via `this[index]` and `this.length`, which triggers the proxy's `get`/`set`/`deleteProperty` traps.
-
-For example, `arr.push(item)` triggers:
-1. `get("push")` — accessing the method
-2. `get("length")` — push reads current length
-3. `set(index, item)` — push assigns to the next index
-4. `set("length", newLength)` — push updates length
-
-Considerations:
-- A single method call triggers multiple traps — batching notifications may be desirable
-- Iteration (`forEach`, `for...of`, `map`, etc.) creates subscriptions to many indices — may want an `ArrayIteratorChangeSource` for coarse-grained "anything changed" tracking
-- Methods like `includes`, `indexOf` read every element, creating many fine-grained subscriptions
-
-For a first pass, Object rules should work; Array-specific optimizations can be added later based on real-world usage patterns.
-
-### Map and Set
-
-Map and Set **cannot** reuse Object rules. Their methods operate on internal slots (`[[MapData]]`, `[[SetData]]`) that proxies cannot intercept. When `map.set(key, value)` executes, only the `get("set")` trap fires — the actual mutation is invisible to the proxy.
-
-**Solution:** Intercept method names in the `get` trap and return wrapped functions that subscribe/notify appropriately (see "function traps" in the preamble above).
-
-**`this` binding issue:** Map/Set methods check internal slots and throw `TypeError` if `this` isn't a real Map/Set. Wrapped methods must call the original method on the target, not the proxy:
-
-```javascript
-get(target, prop, receiver) {
-  const value = Reflect.get(target, prop, target)
-  if (typeof value === 'function') {
-    return function(...args) {
-      // subscribe/notify logic here
-      return value.apply(target, args)  // call on target
-    }
-  }
-  return value
-}
-```
-
-**Special symbols to handle:**
-- `Symbol.iterator` — used by `for...of`, spread, `Array.from()`. Should subscribe to contents/keys source.
-- `Symbol.toStringTag` — pass through for proper `Object.prototype.toString()` behavior
-- `size` — a getter, not a method; handle directly in `get` trap
-
-**Suggested ChangeSources for Map:**
-
-| Operation | Subscribe | Notify |
-|-----------|-----------|--------|
-| `get(key)` | MapKey[key] | — |
-| `has(key)` | MapHasKey[key] | — |
-| `set(key, val)` | — | MapKey[key], MapHasKey[key], MapSize, MapKeys |
-| `delete(key)` | — | MapKey[key], MapHasKey[key], MapSize, MapKeys |
-| `clear()` | — | all keys, MapSize, MapKeys |
-| `size` | MapSize | — |
-| `keys()`/`values()`/`entries()`/`forEach()`/`Symbol.iterator` | MapKeys | — |
-
-Set is similar but without key/value distinction — just membership (`SetHas[value]`, `SetSize`, `SetValues`).
