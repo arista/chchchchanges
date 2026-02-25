@@ -4,7 +4,7 @@ This document tracks the roadmap and planned features for chchchchanges
 
 ## Current Focus
 
-Implement Step 1 from the Initial Development Plan below.  Implement on branch nsa-changesourcelistener
+Implement Step 4 from the Initial Development Plan below.  Implement on branch nsa-initial-4
 
 ## Initial Development Plan
 
@@ -30,7 +30,7 @@ The coordination layer. ChangeDomain manages a current ChangeContext and current
 
 Tests: detectChanges returns the function's result, onChange fires when a dependency changes, nested detectChanges suspends/resumes outer context, remove() unsubscribes from all sources, withTransaction skips when inside detectChanges.
 
-### Step 4: ChangeProxy infrastructure and enableChanges
+### Step 4: ChangeProxy infrastructure and enableChanges ✅
 
 The proxy creation and type-dispatch framework. Implements the object-to-proxy mapping using well-known Symbols (navigate between proxy and target, check domain ownership). `enableChanges` passes through primitives, returns existing proxies as-is, errors on cross-domain conflicts, and dispatches to type-specific proxy handlers based on the target (plain Object, Array, Map, Set). Initially only the Object handler is registered; others are added in later steps.
 
