@@ -4,7 +4,7 @@ This document tracks the roadmap and planned features for chchchchanges
 
 ## Current Focus
 
-Come up with a plan for the initial implementation according to the current specs, broken down into steps that make sense to review as units.  List the steps in this PLANS.md file under heading Initial Development Plan.  Put this on branch nsa-initial-plan
+Implement Step 1 from the Initial Development Plan below.  Implement on branch nsa-changesourcelistener
 
 ## Initial Development Plan
 
