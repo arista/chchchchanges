@@ -18,7 +18,7 @@ Key types: `ChangeSource`, `ChangeListener`, `ChangeSubscription`, `ChangeCallba
 
 Tests: subscribe/unsubscribe, listAndClearListeners clears the list, listener can subscribe to multiple sources, duplicate subscribe is idempotent, wasNotified flag behavior.
 
-### Step 2: ChangeTransaction
+### Step 2: ChangeTransaction ✅
 
 The notification orchestration layer. Implements `notify(source)` which processes before-callbacks immediately (allowing recursive nesting) and queues after-callbacks. The `complete()` method drains after-callbacks via index-based iteration (supporting growth during iteration), then cleans up empty ChangeSources.
 
