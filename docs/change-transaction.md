@@ -44,10 +44,21 @@ When notify() is called on the ChangeTransaction, it goes through these steps:
 
 Once the final withTransaction() completes, it will call complete() on the transaction, which does the following:
 
-* go through all of the afterNotifications registered with the transaction
-    * call the afterNotification callback
-* keep in mind that the callbacks could themselves be triggering more changes and notifications, which means that the list of afterNotifications might continue to grow
+* iterate through afterNotifications using an index, starting at 0
+    * call the afterNotification callback at the current index
+    * increment the index
+    * callbacks may trigger more changes and notifications, which may append new entries to the afterNotifications list - these will be processed as the index advances past the original length
 * only after all afterNotifications have been processed (including any added during processing), go through each of the transaction's set of ChangeSources
     * for each ChangeSource, if it has no listeners, call its remove() method
 
-TBD - figure out a way to detect dependency cycles
+## Cross-Domain Restrictions
+
+It is an error for a callback triggered during a ChangeTransaction to modify a change-enabled object belonging to a different ChangeDomain.  If a proxy trap detects that another ChangeDomain already has a transaction in progress, it should throw an error.
+
+This avoids the complexity of cross-domain transaction ordering and potential circular interactions between domains.  If two domains are coupled enough that one domain's callbacks need to modify the other domain's state, they should likely be the same domain.  If cross-domain propagation is truly needed, the callback can defer the modification outside the transaction (e.g., via `setTimeout` or `queueMicrotask`).
+
+## Dependency Cycles
+
+The above iteration strategy means that if after-callbacks continuously trigger changes that produce new after-callbacks, the transaction will never complete.  The `wasNotified` flag on ChangeListeners prevents a single listener from being notified twice in the same transaction, but it does not prevent cycles that arise from after-callbacks re-running functions (via `detectChanges`), which create *new* listeners that then get triggered by further changes in the same transaction.  Each new listener has its own `wasNotified` flag, so the cycle is not caught.
+
+TBD - figure out a way to detect these cycles
