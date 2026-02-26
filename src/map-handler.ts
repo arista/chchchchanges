@@ -93,6 +93,7 @@ export function createMapHandler(state: ChangeProxyState): ProxyHandler<object> 
     hasProperty: null,
     property: null,
     ownKeys: null,
+    cachedGetters: null,
     mapKey: null,
     mapHasKey: null,
     mapSize: null,

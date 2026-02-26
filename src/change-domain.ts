@@ -2,6 +2,7 @@ import type { ChangeCallback } from "./change-callback.js"
 import { ChangeListener } from "./change-source.js"
 import { ChangeTransaction } from "./change-transaction.js"
 import { enableChanges } from "./change-proxy.js"
+import { createCachedFunction as createCF } from "./cached-function.js"
 
 export interface ChangeDetecting<T> {
   result: T
@@ -37,6 +38,10 @@ export class ChangeDomain {
         this.transaction = null
       }
     }
+  }
+
+  createCachedFunction<T>(fn: () => T): () => T {
+    return createCF(this, fn)
   }
 
   detectChanges<T>(f: () => T, onChange: ChangeCallback): ChangeDetecting<T> {

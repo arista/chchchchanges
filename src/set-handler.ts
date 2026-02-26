@@ -52,6 +52,7 @@ export function createSetHandler(state: ChangeProxyState): ProxyHandler<object> 
     hasProperty: null,
     property: null,
     ownKeys: null,
+    cachedGetters: null,
     setHas: null,
     setSize: null,
     setKeys: null,
