@@ -1,6 +1,7 @@
 import { ChangeSource } from "./change-source.js"
 import type { ChangeProxyState } from "./change-proxy.js"
 import { CHANGE_PROXY_STATE, enableChanges } from "./change-proxy.js"
+import type { CachedFunction } from "./cached-function.js"
 
 export interface ObjectChangeSources {
   prototypeOf: ChangeSource | null
@@ -9,7 +10,7 @@ export interface ObjectChangeSources {
   hasProperty: Map<PropertyKey, ChangeSource> | null
   property: Map<PropertyKey, ChangeSource> | null
   ownKeys: ChangeSource | null
-  cachedGetters: Map<PropertyKey, (() => unknown) | null> | null
+  cachedGetters: Map<PropertyKey, CachedFunction<unknown> | null> | null
 }
 
 function ensureCS(state: ChangeProxyState): ObjectChangeSources {
@@ -83,7 +84,7 @@ export function createObjectHandler(state: ChangeProxyState): ProxyHandler<objec
       // Check for cached getter-only property (fast path)
       const cs = state.changeSources as ObjectChangeSources | null
       const cachedGetter = cs?.cachedGetters?.get(prop)
-      if (cachedGetter) return cachedGetter()
+      if (cachedGetter) return cachedGetter.call()
 
       // Check for getter-with-no-setter — wrap in CachedFunction
       if (domain.changeContext && cachedGetter === undefined) {
@@ -93,7 +94,7 @@ export function createObjectHandler(state: ChangeProxyState): ProxyHandler<objec
           if (!csObj.cachedGetters) csObj.cachedGetters = new Map()
           const fn = domain.createCachedFunction(() => desc.get!.call(state.proxy))
           csObj.cachedGetters.set(prop, fn)
-          return fn()
+          return fn.call()
         }
         // Negative cache: not a getter-only property
         if (cs?.cachedGetters) cs.cachedGetters.set(prop, null)

@@ -3,6 +3,7 @@ export type {
   BeforeChangeCallback,
   ChangeCallback,
 } from "./change-callback.js"
+export type { CachedFunction, CachedFunctionListener } from "./cached-function.js"
 export { ChangeSource, ChangeListener } from "./change-source.js"
 export type { ChangeSubscription } from "./change-source.js"
 export { ChangeTransaction } from "./change-transaction.js"
