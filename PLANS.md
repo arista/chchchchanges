@@ -4,7 +4,7 @@ This document tracks the roadmap and planned features for chchchchanges
 
 ## Current Focus
 
-Implement Step 8 from the Initial Development Plan below.  Implement on branch nsa-initial-8
+Implement Step 9 from the Initial Development Plan below.  Implement on branch nsa-initial-9
 
 ## Initial Development Plan
 
@@ -60,7 +60,7 @@ Similar to Map but for Sets. Implements SetHasChangeSource, SetSizeChangeSource,
 
 Tests: set.has subscribes to SetHas + SetClear, set.add notifies SetHas + SetSize + SetKeys, set.delete same as add, set.clear notifies SetSize + SetKeys + SetClear, iteration subscribes to SetKeys, set.size subscribes to SetSize.
 
-### Step 9: CachedFunction
+### Step 9: CachedFunction ✅
 
 Implements `createCachedFunction` on ChangeDomain. The caching function uses `detectChanges` internally to track dependencies of the wrapped function. On first call (or when invalidated), it evaluates the function in a new ChangeContext and caches the result. It also acts as a ChangeSource — if called during another `detectChanges`, the caller subscribes to the CachedFunction's source. When invalidated, it notifies its own listeners. The result is passed through `enableChanges`.
 
