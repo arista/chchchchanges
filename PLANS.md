@@ -4,7 +4,7 @@ This document tracks the roadmap and planned features for chchchchanges
 
 ## Current Focus
 
-Implement Step 9 from the Initial Development Plan below.  Implement on branch nsa-initial-9
+Implement Step 10 from the Initial Development Plan below.  Implement on branch nsa-initial-10
 
 ## Initial Development Plan
 
@@ -68,7 +68,7 @@ Also wires CachedFunction into the Object proxy: when `get` encounters a getter-
 
 Tests: caches result and returns same value on second call, invalidates when dependency changes, re-evaluates after invalidation, acts as a ChangeSource for outer detectChanges, getter-only properties use CachedFunction, nested CachedFunctions work correctly.
 
-### Step 10: Public API
+### Step 10: Public API ✅
 
 The top-level `Changes` export that ties everything together. Creates a global ChangeDomain. Exposes `createDomain()`, `globalDomain`, and shorthand methods (`enableChanges`, `detectChanges`, `createCachedFunction`) that delegate to the global domain. This is the library's entry point exported from `src/index.ts`.
 
