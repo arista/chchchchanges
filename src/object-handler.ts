@@ -9,6 +9,7 @@ export interface ObjectChangeSources {
   hasProperty: Map<PropertyKey, ChangeSource> | null
   property: Map<PropertyKey, ChangeSource> | null
   ownKeys: ChangeSource | null
+  cachedGetters: Map<PropertyKey, (() => unknown) | null> | null
 }
 
 function ensureCS(state: ChangeProxyState): ObjectChangeSources {
@@ -20,6 +21,7 @@ function ensureCS(state: ChangeProxyState): ObjectChangeSources {
       hasProperty: null,
       property: null,
       ownKeys: null,
+      cachedGetters: null,
     }
   }
   return state.changeSources as ObjectChangeSources
@@ -61,13 +63,42 @@ function subscribeKeyed(
   source.subscribe(ctx.listener)
 }
 
+function getPropertyDescriptor(obj: object, prop: PropertyKey): PropertyDescriptor | undefined {
+  let current: object | null = obj
+  while (current) {
+    const desc = Object.getOwnPropertyDescriptor(current, prop)
+    if (desc) return desc
+    current = Object.getPrototypeOf(current)
+  }
+  return undefined
+}
+
 export function createObjectHandler(state: ChangeProxyState): ProxyHandler<object> {
   const domain = state.changeDomain
 
   return {
     get(target, prop, receiver) {
       if (prop === CHANGE_PROXY_STATE) return state
-      // Getter-with-no-setter CachedFunction optimization deferred to Step 9
+
+      // Check for cached getter-only property (fast path)
+      const cs = state.changeSources as ObjectChangeSources | null
+      const cachedGetter = cs?.cachedGetters?.get(prop)
+      if (cachedGetter) return cachedGetter()
+
+      // Check for getter-with-no-setter — wrap in CachedFunction
+      if (domain.changeContext && cachedGetter === undefined) {
+        const desc = getPropertyDescriptor(target, prop)
+        if (desc?.get && !desc.set) {
+          const csObj = ensureCS(state)
+          if (!csObj.cachedGetters) csObj.cachedGetters = new Map()
+          const fn = domain.createCachedFunction(() => desc.get!.call(state.proxy))
+          csObj.cachedGetters.set(prop, fn)
+          return fn()
+        }
+        // Negative cache: not a getter-only property
+        if (cs?.cachedGetters) cs.cachedGetters.set(prop, null)
+      }
+
       subscribeKeyed(state, "property", prop)
       const value = Reflect.get(target, prop, receiver)
       // Proxy invariant: non-configurable, non-writable own data properties
