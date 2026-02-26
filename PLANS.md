@@ -4,7 +4,7 @@ This document tracks the roadmap and planned features for chchchchanges
 
 ## Current Focus
 
-Implement Step 4 from the Initial Development Plan below.  Implement on branch nsa-initial-4
+Implement Step 6 from the Initial Development Plan below.  Implement on branch nsa-initial-6
 
 ## Initial Development Plan
 
@@ -42,7 +42,7 @@ The most complex handler — implements all Object proxy traps per the spec. Eac
 
 Tests: get subscribes to property source, set notifies property + hasProperty + ownKeys, delete notifies same as set, has subscribes to hasProperty, defineProperty notifies ownPropertyDescriptor + property + hasProperty + ownKeys, ownKeys subscribes to ownKeys source, prototype traps, isExtensible/preventExtensions, returned objects are auto-wrapped, end-to-end with detectChanges (mutate property → onChange fires).
 
-### Step 6: Array ChangeProxy
+### Step 6: Array ChangeProxy ✅
 
 Arrays use a single ArrayChangeSource. All accessor traps (get, has, ownKeys, etc.) subscribe to it; all mutator traps (set, deleteProperty, defineProperty) notify it. No special method interception needed since array methods use the underlying traps.
 
