@@ -12,7 +12,7 @@ Changes {
   // Shorthand for calling these functions on the globalDomain
   enableChanges<T>(val: T): T
   detectChanges<T>(f: ()=>T, onChange: ChangeCallback)
-  createCachedFunction<T>(f: ()=>T): ()=>T
+  createCachedFunction<T>(f: ()=>T): CachedFunction
 }
 
 ChangeDomain {
@@ -42,6 +42,22 @@ ChangeDetecting<T> {
   result: T
   remove()
 }
+
+CachedFunction<T> {
+  // Execute the cached function, 
+  call(): T
+
+  // Similar to ChangeDetecting.remove(), this "disconnects" the CachedFunction from any other future notifications.  This should be called when the CachedFunction is no longer needed, to avoid memory leaks
+  remove()
+
+  // Adds a listener that will be notified whenever the CachedFunction receives a notification that its cached value has been invalidated
+  addListener(listener: CachedFunctionListener)
+
+  // Removes a previously-added listener (ignore if the listener was not added)
+  removeListener(listener: CachedFunctionListener)
+}
+
+CachedFunctionListener = ()=>void
 
 ```
 

@@ -66,11 +66,11 @@ const total = Changes.createCachedFunction(() =>
   state.items.reduce((sum, n) => sum + n, 0),
 )
 
-total()  // 60 (computed)
-total()  // 60 (cached)
+total.call()  // 60 (computed)
+total.call()  // 60 (cached)
 
 state.items.push(40)
-total()  // 100 (recomputed)
+total.call()  // 100 (recomputed)
 ```
 
 Chain them for derived computations with minimal fan-out:
@@ -79,8 +79,8 @@ Chain them for derived computations with minimal fan-out:
 const subtotal = Changes.createCachedFunction(() =>
   cart.items.reduce((sum, item) => sum + item.price, 0),
 )
-const tax = Changes.createCachedFunction(() => subtotal() * taxRate.value)
-const grandTotal = Changes.createCachedFunction(() => subtotal() + tax())
+const tax = Changes.createCachedFunction(() => subtotal.call() * taxRate.value)
+const grandTotal = Changes.createCachedFunction(() => subtotal.call() + tax.call())
 
 // Changing an item price only recomputes subtotal, tax, and grandTotal
 // — not every individual watcher
@@ -88,7 +88,7 @@ const grandTotal = Changes.createCachedFunction(() => subtotal() + tax())
 
 ## Cleanup
 
-Call `remove()` to stop listening:
+Call `remove()` to stop listening. Both `ChangeDetecting` and `CachedFunction` support this:
 
 ```ts
 const detecting = Changes.detectChanges(
@@ -98,6 +98,14 @@ const detecting = Changes.detectChanges(
 
 detecting.remove()
 state.count = 99  // nothing logged
+```
+
+```ts
+const total = Changes.createCachedFunction(() =>
+  state.items.reduce((sum, n) => sum + n, 0),
+)
+
+total.remove()  // disconnect when no longer needed
 ```
 
 ## API
@@ -110,7 +118,7 @@ Top-level entry point. Uses a shared global `ChangeDomain`.
 |---|---|
 | `enableChanges<T>(val: T): T` | Wrap a value for change tracking |
 | `detectChanges<T>(f: () => T, onChange): ChangeDetecting<T>` | Track dependencies and get notified on change |
-| `createCachedFunction<T>(f: () => T): () => T` | Create a cached, auto-invalidating computation |
+| `createCachedFunction<T>(f: () => T): CachedFunction<T>` | Create a cached, auto-invalidating computation |
 | `createDomain(): ChangeDomain` | Create an independent tracking domain |
 | `globalDomain` | The shared `ChangeDomain` used by the shorthand methods |
 
@@ -128,6 +136,17 @@ Returned by `detectChanges`.
 |---|---|
 | `result: T` | The return value of the tracked function |
 | `remove()` | Stop listening for changes |
+
+### `CachedFunction<T>`
+
+Returned by `createCachedFunction`.
+
+| Method | Description |
+|---|---|
+| `call(): T` | Execute the cached function, returning the cached value if still valid |
+| `remove()` | Disconnect from change notifications (call when no longer needed) |
+| `addListener(listener: () => void)` | Subscribe to be notified when the cached value is invalidated |
+| `removeListener(listener: () => void)` | Unsubscribe from invalidation notifications |
 
 ### `ChangeCallback`
 
