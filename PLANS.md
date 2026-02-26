@@ -4,7 +4,7 @@ This document tracks the roadmap and planned features for chchchchanges
 
 ## Current Focus
 
-Implement Step 7 from the Initial Development Plan below.  Implement on branch nsa-initial-7
+Implement Step 8 from the Initial Development Plan below.  Implement on branch nsa-initial-8
 
 ## Initial Development Plan
 
@@ -54,7 +54,7 @@ Extends Object proxy with Map-specific function traps. Intercepts `get` to detec
 
 Tests: map.get(key) subscribes to MapKey + MapClear, map.has(key) subscribes to MapHasKey + MapClear, map.set notifies MapKey + MapHasKey + MapSize + MapKeys, map.delete same as set, map.clear notifies MapSize + MapKeys + MapClear, iteration subscribes to MapKeys, map.size subscribes to MapSize, values returned from map.get are auto-wrapped.
 
-### Step 8: Set ChangeProxy
+### Step 8: Set ChangeProxy ✅
 
 Similar to Map but for Sets. Implements SetHasChangeSource, SetSizeChangeSource, SetKeysChangeSource, and SetClearChangeSource. Set methods also call through to the target for `this`.
 
