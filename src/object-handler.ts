@@ -134,6 +134,9 @@ export function createObjectHandler(state: ChangeProxyState): ProxyHandler<objec
       subscribeKeyed(state, "ownPropertyDescriptor", prop)
       const desc = Reflect.getOwnPropertyDescriptor(target, prop)
       if (desc && "value" in desc) {
+        // Proxy invariant: non-configurable, non-writable data properties
+        // must return the exact descriptor — skip wrapping for these
+        if (!desc.configurable && !desc.writable) return desc
         return { ...desc, value: enableChanges(desc.value, domain) }
       }
       return desc
