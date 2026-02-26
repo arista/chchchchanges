@@ -79,12 +79,12 @@ describe("Changes (Public API)", () => {
         return obj.a * 2
       })
 
-      assert.equal(cached(), 2)
-      assert.equal(cached(), 2)
+      assert.equal(cached.call(), 2)
+      assert.equal(cached.call(), 2)
       assert.equal(callCount, 1)
 
       obj.a = 5
-      assert.equal(cached(), 10)
+      assert.equal(cached.call(), 10)
       assert.equal(callCount, 2)
     })
   })
@@ -199,16 +199,16 @@ describe("Changes (Public API)", () => {
 
       Changes.detectChanges(
         () => {
-          total()
+          total.call()
         },
         () => calls.push("total-changed"),
       )
 
-      assert.equal(total(), 15)
+      assert.equal(total.call(), 15)
 
       state.items.push(10)
       assert.deepStrictEqual(calls, ["total-changed"])
-      assert.equal(total(), 25)
+      assert.equal(total.call(), 25)
     })
 
     it("should work with before/after callbacks end-to-end", () => {

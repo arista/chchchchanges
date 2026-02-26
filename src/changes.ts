@@ -1,6 +1,7 @@
 import type { ChangeCallback } from "./change-callback.js"
 import type { ChangeDetecting } from "./change-domain.js"
 import { ChangeDomain } from "./change-domain.js"
+import type { CachedFunction } from "./cached-function.js"
 
 const globalDomain = new ChangeDomain()
 
@@ -21,7 +22,7 @@ export const Changes = {
     return globalDomain.detectChanges(f, onChange)
   },
 
-  createCachedFunction<T>(fn: () => T): () => T {
+  createCachedFunction<T>(fn: () => T): CachedFunction<T> {
     return globalDomain.createCachedFunction(fn)
   },
 }
