@@ -4,7 +4,7 @@ This document tracks the roadmap and planned features for chchchchanges
 
 ## Current Focus
 
-Implement Step 6 from the Initial Development Plan below.  Implement on branch nsa-initial-6
+Implement Step 7 from the Initial Development Plan below.  Implement on branch nsa-initial-7
 
 ## Initial Development Plan
 
@@ -48,7 +48,7 @@ Arrays use a single ArrayChangeSource. All accessor traps (get, has, ownKeys, et
 
 Tests: array element access subscribes, push/pop/splice trigger onChange, iteration subscribes, sort triggers onChange, index assignment triggers onChange, returned elements are auto-wrapped.
 
-### Step 7: Map ChangeProxy
+### Step 7: Map ChangeProxy ✅
 
 Extends Object proxy with Map-specific function traps. Intercepts `get` to detect Map method access and returns wrapped functions. Implements MapKeyChangeSource, MapHasKeyChangeSource, MapSizeChangeSource, MapKeysChangeSource, and MapClearChangeSource per the spec. Map methods must call through to the target (not the proxy receiver) for `this`.
 
