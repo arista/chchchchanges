@@ -7,9 +7,11 @@ export interface ChangeSubscription {
 
 export class ChangeSource {
   private readonly listeners = new Set<ChangeListener>()
+  readonly name: string
   readonly remove: () => void
 
-  constructor(remove: () => void) {
+  constructor(name: string, remove: () => void) {
+    this.name = name
     this.remove = remove
   }
 
@@ -37,10 +39,12 @@ export class ChangeSource {
 export class ChangeListener {
   wasNotified = false
   readonly callback: ChangeCallback
+  readonly detectChangesName: string
   readonly subscriptions: ChangeSubscription[] = []
 
-  constructor(callback: ChangeCallback) {
+  constructor(callback: ChangeCallback, detectChangesName: string) {
     this.callback = callback
+    this.detectChangesName = detectChangesName
   }
 
   unsubscribe(): void {

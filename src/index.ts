@@ -3,6 +3,20 @@ export type {
   BeforeChangeCallback,
   ChangeCallback,
 } from "./change-callback.js"
+export type {
+  ChangesConfig,
+  ChangeEventLogger,
+  ChangeEvent,
+  TransactionStarted,
+  TransactionEnded,
+  BeforeChangeNotified,
+  AfterChangeNotified,
+  DetectChangesEntered,
+  DetectChangesExited,
+  DetectChangesSuspended,
+  DetectChangesResumed,
+  ChangeSourceReferenced,
+} from "./change-event.js"
 export type { CachedFunction, CachedFunctionListener } from "./cached-function.js"
 export { ChangeSource, ChangeListener } from "./change-source.js"
 export type { ChangeSubscription } from "./change-source.js"

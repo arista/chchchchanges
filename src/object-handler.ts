@@ -28,6 +28,12 @@ function ensureCS(state: ChangeProxyState): ObjectChangeSources {
   return state.changeSources as ObjectChangeSources
 }
 
+const singleFieldNames: Record<"prototypeOf" | "isExtensible" | "ownKeys", string> = {
+  prototypeOf: "<prototype>",
+  isExtensible: "<extensible>",
+  ownKeys: "<keys>",
+}
+
 function subscribeSingle(
   state: ChangeProxyState,
   field: "prototypeOf" | "isExtensible" | "ownKeys",
@@ -36,11 +42,35 @@ function subscribeSingle(
   if (!ctx) return
   const cs = ensureCS(state)
   if (!cs[field]) {
-    cs[field] = new ChangeSource(() => {
+    const sourceName = `${state.name}.${singleFieldNames[field]}`
+    cs[field] = new ChangeSource(sourceName, () => {
       cs[field] = null
     })
   }
-  cs[field]!.subscribe(ctx.listener)
+  const source = cs[field]!
+  source.subscribe(ctx.listener)
+  state.changeDomain.logger?.({
+    type: "ChangeSourceReferenced",
+    domain: state.changeDomain.name,
+    source: source.name,
+    detectChanges: ctx.name,
+  })
+}
+
+function getKeyedSourceName(
+  baseName: string,
+  field: "ownPropertyDescriptor" | "hasProperty" | "property",
+  key: PropertyKey,
+): string {
+  const keyStr = String(key)
+  switch (field) {
+    case "ownPropertyDescriptor":
+      return `${baseName}.propertyDescriptor(${keyStr})`
+    case "hasProperty":
+      return `${baseName}.has(${keyStr})`
+    case "property":
+      return `${baseName}.${keyStr}`
+  }
 }
 
 function subscribeKeyed(
@@ -55,13 +85,20 @@ function subscribeKeyed(
   const map = cs[field]!
   let source = map.get(key)
   if (!source) {
-    source = new ChangeSource(() => {
+    const sourceName = getKeyedSourceName(state.name, field, key)
+    source = new ChangeSource(sourceName, () => {
       map.delete(key)
       if (map.size === 0) cs[field] = null
     })
     map.set(key, source)
   }
   source.subscribe(ctx.listener)
+  state.changeDomain.logger?.({
+    type: "ChangeSourceReferenced",
+    domain: state.changeDomain.name,
+    source: source.name,
+    detectChanges: ctx.name,
+  })
 }
 
 function getPropertyDescriptor(obj: object, prop: PropertyKey): PropertyDescriptor | undefined {
@@ -92,7 +129,8 @@ export function createObjectHandler(state: ChangeProxyState): ProxyHandler<objec
         if (desc?.get && !desc.set) {
           const csObj = ensureCS(state)
           if (!csObj.cachedGetters) csObj.cachedGetters = new Map()
-          const fn = domain.createCachedFunction(() => desc.get!.call(state.proxy))
+          const getterName = `${state.name}.${String(prop)}<getter>`
+          const fn = domain.createCachedFunction(() => desc.get!.call(state.proxy), getterName)
           csObj.cachedGetters.set(prop, fn)
           return fn.call()
         }
@@ -110,7 +148,9 @@ export function createObjectHandler(state: ChangeProxyState): ProxyHandler<objec
           return value
         }
       }
-      return enableChanges(value, domain)
+      // Chain the name for nested objects
+      const childName = `${state.name}.${String(prop)}`
+      return enableChanges(value, domain, childName)
     },
 
     has(target, prop) {
@@ -119,7 +159,8 @@ export function createObjectHandler(state: ChangeProxyState): ProxyHandler<objec
     },
 
     set(target, prop, value, receiver) {
-      const wrappedValue = enableChanges(value, domain)
+      const childName = `${state.name}.${String(prop)}`
+      const wrappedValue = enableChanges(value, domain, childName)
       if (domain.changeContext != null) {
         return Reflect.set(target, prop, wrappedValue, receiver)
       }
@@ -162,7 +203,8 @@ export function createObjectHandler(state: ChangeProxyState): ProxyHandler<objec
 
     defineProperty(target, prop, descriptor) {
       if ("value" in descriptor) {
-        descriptor = { ...descriptor, value: enableChanges(descriptor.value, domain) }
+        const childName = `${state.name}.${String(prop)}`
+        descriptor = { ...descriptor, value: enableChanges(descriptor.value, domain, childName) }
       }
       if (domain.changeContext != null) {
         return Reflect.defineProperty(target, prop, descriptor)
@@ -190,7 +232,8 @@ export function createObjectHandler(state: ChangeProxyState): ProxyHandler<objec
         // Proxy invariant: non-configurable, non-writable data properties
         // must return the exact descriptor — skip wrapping for these
         if (!desc.configurable && !desc.writable) return desc
-        return { ...desc, value: enableChanges(desc.value, domain) }
+        const childName = `${state.name}.${String(prop)}`
+        return { ...desc, value: enableChanges(desc.value, domain, childName) }
       }
       return desc
     },

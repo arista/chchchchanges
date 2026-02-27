@@ -11,16 +11,30 @@ export interface SetChangeSources extends ObjectChangeSources {
   setClear: ChangeSource | null
 }
 
+const singleFieldNames: Record<"setSize" | "setKeys" | "setClear", string> = {
+  setSize: "<size>",
+  setKeys: "<keys>",
+  setClear: "<clear>",
+}
+
 function subscribeSingle(state: ChangeProxyState, field: "setSize" | "setKeys" | "setClear"): void {
   const ctx = state.changeDomain.changeContext
   if (!ctx) return
   const cs = state.changeSources as SetChangeSources
   if (!cs[field]) {
-    cs[field] = new ChangeSource(() => {
+    const sourceName = `${state.name}.${singleFieldNames[field]}`
+    cs[field] = new ChangeSource(sourceName, () => {
       cs[field] = null
     })
   }
-  cs[field]!.subscribe(ctx.listener)
+  const source = cs[field]!
+  source.subscribe(ctx.listener)
+  state.changeDomain.logger?.({
+    type: "ChangeSourceReferenced",
+    domain: state.changeDomain.name,
+    source: source.name,
+    detectChanges: ctx.name,
+  })
 }
 
 function subscribeKeyed(state: ChangeProxyState, key: unknown): void {
@@ -31,13 +45,20 @@ function subscribeKeyed(state: ChangeProxyState, key: unknown): void {
   const map = cs.setHas
   let source = map.get(key)
   if (!source) {
-    source = new ChangeSource(() => {
+    const sourceName = `${state.name}.has(${String(key)})`
+    source = new ChangeSource(sourceName, () => {
       map.delete(key)
       if (map.size === 0) cs.setHas = null
     })
     map.set(key, source)
   }
   source.subscribe(ctx.listener)
+  state.changeDomain.logger?.({
+    type: "ChangeSourceReferenced",
+    domain: state.changeDomain.name,
+    source: source.name,
+    detectChanges: ctx.name,
+  })
 }
 
 export function createSetHandler(state: ChangeProxyState): ProxyHandler<object> {

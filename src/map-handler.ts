@@ -12,16 +12,40 @@ export interface MapChangeSources extends ObjectChangeSources {
   mapClear: ChangeSource | null
 }
 
+const singleFieldNames: Record<"mapSize" | "mapKeys" | "mapClear", string> = {
+  mapSize: "<size>",
+  mapKeys: "<keys>",
+  mapClear: "<clear>",
+}
+
 function subscribeSingle(state: ChangeProxyState, field: "mapSize" | "mapKeys" | "mapClear"): void {
   const ctx = state.changeDomain.changeContext
   if (!ctx) return
   const cs = state.changeSources as MapChangeSources
   if (!cs[field]) {
-    cs[field] = new ChangeSource(() => {
+    const sourceName = `${state.name}.${singleFieldNames[field]}`
+    cs[field] = new ChangeSource(sourceName, () => {
       cs[field] = null
     })
   }
-  cs[field]!.subscribe(ctx.listener)
+  const source = cs[field]!
+  source.subscribe(ctx.listener)
+  state.changeDomain.logger?.({
+    type: "ChangeSourceReferenced",
+    domain: state.changeDomain.name,
+    source: source.name,
+    detectChanges: ctx.name,
+  })
+}
+
+function getMapKeyedSourceName(baseName: string, field: "mapKey" | "mapHasKey", key: unknown): string {
+  const keyStr = String(key)
+  switch (field) {
+    case "mapKey":
+      return `${baseName}.${keyStr}`
+    case "mapHasKey":
+      return `${baseName}.has(${keyStr})`
+  }
 }
 
 function subscribeKeyed(
@@ -36,13 +60,20 @@ function subscribeKeyed(
   const map = cs[field]!
   let source = map.get(key)
   if (!source) {
-    source = new ChangeSource(() => {
+    const sourceName = getMapKeyedSourceName(state.name, field, key)
+    source = new ChangeSource(sourceName, () => {
       map.delete(key)
       if (map.size === 0) cs[field] = null
     })
     map.set(key, source)
   }
   source.subscribe(ctx.listener)
+  state.changeDomain.logger?.({
+    type: "ChangeSourceReferenced",
+    domain: state.changeDomain.name,
+    source: source.name,
+    detectChanges: ctx.name,
+  })
 }
 
 function wrapValueIterator(
@@ -64,6 +95,7 @@ function wrapValueIterator(
 function wrapEntryIterator(
   iter: IterableIterator<[unknown, unknown]>,
   domain: ChangeProxyState["changeDomain"],
+  baseName: string,
 ): IterableIterator<[unknown, unknown]> {
   return {
     [Symbol.iterator]() {
@@ -72,9 +104,11 @@ function wrapEntryIterator(
     next() {
       const result = iter.next()
       if (result.done) return result
+      const key = result.value[0]
+      const childName = `${baseName}.${String(key)}`
       return {
         done: false,
-        value: [result.value[0], enableChanges(result.value[1], domain)],
+        value: [key, enableChanges(result.value[1], domain, childName)],
       }
     },
   }
@@ -107,7 +141,8 @@ export function createMapHandler(state: ChangeProxyState): ProxyHandler<object> 
   const wrappedGet = (key: unknown) => {
     subscribeKeyed(state, "mapKey", key)
     subscribeSingle(state, "mapClear")
-    return enableChanges(target.get(key), domain)
+    const childName = `${state.name}.${String(key)}`
+    return enableChanges(target.get(key), domain, childName)
   }
 
   const wrappedHas = (key: unknown) => {
@@ -117,7 +152,8 @@ export function createMapHandler(state: ChangeProxyState): ProxyHandler<object> 
   }
 
   const wrappedSet = (key: unknown, value: unknown) => {
-    const wrappedValue = enableChanges(value, domain)
+    const childName = `${state.name}.${String(key)}`
+    const wrappedValue = enableChanges(value, domain, childName)
     if (domain.changeContext != null) {
       target.set(key, wrappedValue)
       return state.proxy
@@ -188,7 +224,7 @@ export function createMapHandler(state: ChangeProxyState): ProxyHandler<object> 
 
   const wrappedEntries = () => {
     subscribeSingle(state, "mapKeys")
-    return wrapEntryIterator(target.entries(), domain)
+    return wrapEntryIterator(target.entries(), domain, state.name)
   }
 
   const wrappedForEach = (
@@ -197,7 +233,8 @@ export function createMapHandler(state: ChangeProxyState): ProxyHandler<object> 
   ) => {
     subscribeSingle(state, "mapKeys")
     target.forEach((value, key) => {
-      callback.call(thisArg, enableChanges(value, domain), key, state.proxy)
+      const childName = `${state.name}.${String(key)}`
+      callback.call(thisArg, enableChanges(value, domain, childName), key, state.proxy)
     })
   }
 
