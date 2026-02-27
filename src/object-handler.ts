@@ -128,7 +128,17 @@ export function createObjectHandler(state: ChangeProxyState): ProxyHandler<objec
         t.notify(cs?.property?.get(prop) ?? null)
         t.notify(cs?.hasProperty?.get(prop) ?? null)
         t.notify(cs?.ownKeys ?? null)
-        return Reflect.set(target, prop, wrappedValue, receiver)
+        t.notifySubscription(state, {
+          type: "ObjectSet",
+          target: state.proxy,
+          prop,
+          value: wrappedValue,
+        })
+        // Suppress subscription notifications from nested defineProperty calls
+        // that may be triggered by Reflect.set when the receiver is a proxy
+        return t.withSuppressedObjectChanges(state, () => {
+          return Reflect.set(target, prop, wrappedValue, receiver)
+        })
       })
     },
 
@@ -141,6 +151,11 @@ export function createObjectHandler(state: ChangeProxyState): ProxyHandler<objec
         t.notify(cs?.property?.get(prop) ?? null)
         t.notify(cs?.hasProperty?.get(prop) ?? null)
         t.notify(cs?.ownKeys ?? null)
+        t.notifySubscription(state, {
+          type: "ObjectDeleteProperty",
+          target: state.proxy,
+          prop,
+        })
         return Reflect.deleteProperty(target, prop)
       })
     },
@@ -158,6 +173,12 @@ export function createObjectHandler(state: ChangeProxyState): ProxyHandler<objec
         t.notify(cs?.hasProperty?.get(prop) ?? null)
         t.notify(cs?.ownKeys ?? null)
         t.notify(cs?.ownPropertyDescriptor?.get(prop) ?? null)
+        t.notifySubscription(state, {
+          type: "ObjectDefineProperty",
+          target: state.proxy,
+          key: prop,
+          descriptor,
+        })
         return Reflect.defineProperty(target, prop, descriptor)
       })
     },
@@ -186,6 +207,11 @@ export function createObjectHandler(state: ChangeProxyState): ProxyHandler<objec
       return domain.withTransaction((t) => {
         const cs = state.changeSources as ObjectChangeSources | null
         t.notify(cs?.prototypeOf ?? null)
+        t.notifySubscription(state, {
+          type: "ObjectSetPrototypeOf",
+          target: state.proxy,
+          prototype: proto,
+        })
         return Reflect.setPrototypeOf(target, proto)
       })
     },
@@ -202,6 +228,10 @@ export function createObjectHandler(state: ChangeProxyState): ProxyHandler<objec
       return domain.withTransaction((t) => {
         const cs = state.changeSources as ObjectChangeSources | null
         t.notify(cs?.isExtensible ?? null)
+        t.notifySubscription(state, {
+          type: "ObjectPreventExtensions",
+          target: state.proxy,
+        })
         return Reflect.preventExtensions(target)
       })
     },

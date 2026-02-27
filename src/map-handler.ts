@@ -128,6 +128,12 @@ export function createMapHandler(state: ChangeProxyState): ProxyHandler<object> 
       t.notify(cs?.mapHasKey?.get(key) ?? null)
       t.notify(cs?.mapSize ?? null)
       t.notify(cs?.mapKeys ?? null)
+      t.notifySubscription(state, {
+        type: "MapSet",
+        target: state.proxy as Map<unknown, unknown>,
+        key,
+        value: wrappedValue,
+      })
       target.set(key, wrappedValue)
     })
     return state.proxy
@@ -143,6 +149,11 @@ export function createMapHandler(state: ChangeProxyState): ProxyHandler<object> 
       t.notify(cs?.mapHasKey?.get(key) ?? null)
       t.notify(cs?.mapSize ?? null)
       t.notify(cs?.mapKeys ?? null)
+      t.notifySubscription(state, {
+        type: "MapDelete",
+        target: state.proxy as Map<unknown, unknown>,
+        key,
+      })
       return target.delete(key)
     })
   }
@@ -157,6 +168,10 @@ export function createMapHandler(state: ChangeProxyState): ProxyHandler<object> 
       t.notify(cs?.mapSize ?? null)
       t.notify(cs?.mapKeys ?? null)
       t.notify(cs?.mapClear ?? null)
+      t.notifySubscription(state, {
+        type: "MapClear",
+        target: state.proxy as Map<unknown, unknown>,
+      })
       target.clear()
     })
   }

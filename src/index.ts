@@ -16,3 +16,29 @@ export type { ArrayChangeSources } from "./array-handler.js"
 export type { MapChangeSources } from "./map-handler.js"
 export type { SetChangeSources } from "./set-handler.js"
 export { Changes } from "./changes.js"
+export type {
+  Change,
+  ObjectSetPrototypeOf,
+  ObjectPreventExtensions,
+  ObjectDefineProperty,
+  ObjectDeleteProperty,
+  ObjectSet,
+  ArrayFill,
+  ArrayCopyWithin,
+  ArrayPop,
+  ArrayPush,
+  ArrayReverse,
+  ArraySort,
+  ArrayShift,
+  ArraySplice,
+  ArrayUnshift,
+  MapClear,
+  MapDelete,
+  MapSet,
+  SetClear,
+  SetDelete,
+  SetAdd,
+  SubscriptionListener,
+  AfterSubscriptionCallback,
+  BeforeSubscriptionCallback,
+} from "./change-types.js"

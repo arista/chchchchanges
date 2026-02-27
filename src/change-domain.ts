@@ -1,8 +1,9 @@
 import type { ChangeCallback } from "./change-callback.js"
 import { ChangeListener } from "./change-source.js"
 import { ChangeTransaction } from "./change-transaction.js"
-import { enableChanges } from "./change-proxy.js"
+import { enableChanges, getProxyState } from "./change-proxy.js"
 import { createCachedFunction as createCF, type CachedFunction } from "./cached-function.js"
+import type { SubscriptionListener } from "./change-types.js"
 
 export interface ChangeDetecting<T> {
   result: T
@@ -58,6 +59,25 @@ export class ChangeDomain {
       }
     } finally {
       this.changeContext = prev
+    }
+  }
+
+  subscribe<T extends object>(obj: T, listener: SubscriptionListener): T {
+    const proxy = this.enableChanges(obj)
+    const state = getProxyState(proxy)!
+    if (!state.objectSubscriptions) {
+      state.objectSubscriptions = new Set()
+    }
+    state.objectSubscriptions.add(listener)
+    return proxy as T
+  }
+
+  unsubscribe<T extends object>(obj: T, listener: SubscriptionListener): void {
+    const state = getProxyState(obj)
+    if (!state?.objectSubscriptions) return
+    state.objectSubscriptions.delete(listener)
+    if (state.objectSubscriptions.size === 0) {
+      state.objectSubscriptions = null
     }
   }
 }

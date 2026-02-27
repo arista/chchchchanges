@@ -1,4 +1,5 @@
 import type { ChangeDomain } from "./change-domain.js"
+import type { SubscriptionListener } from "./change-types.js"
 import { createArrayHandler } from "./array-handler.js"
 import { createMapHandler } from "./map-handler.js"
 import { createObjectHandler } from "./object-handler.js"
@@ -11,6 +12,7 @@ export interface ChangeProxyState {
   readonly target: object
   readonly changeDomain: ChangeDomain
   changeSources: unknown
+  objectSubscriptions: Set<SubscriptionListener> | null
 }
 
 const proxyStateMap = new WeakMap<object, ChangeProxyState>()
@@ -53,6 +55,7 @@ export function enableChanges<T>(val: T, domain: ChangeDomain): T {
     target: val as object,
     changeDomain: domain,
     changeSources: null,
+    objectSubscriptions: null,
   }
   const handler = createHandler(val as object, state)
   state.proxy = new Proxy(val as object, handler)

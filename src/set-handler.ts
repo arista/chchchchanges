@@ -78,6 +78,11 @@ export function createSetHandler(state: ChangeProxyState): ProxyHandler<object> 
       t.notify(cs?.setHas?.get(key) ?? null)
       t.notify(cs?.setSize ?? null)
       t.notify(cs?.setKeys ?? null)
+      t.notifySubscription(state, {
+        type: "SetAdd",
+        target: state.proxy as Set<unknown>,
+        value: key,
+      })
       target.add(key)
     })
     return state.proxy
@@ -92,6 +97,11 @@ export function createSetHandler(state: ChangeProxyState): ProxyHandler<object> 
       t.notify(cs?.setHas?.get(key) ?? null)
       t.notify(cs?.setSize ?? null)
       t.notify(cs?.setKeys ?? null)
+      t.notifySubscription(state, {
+        type: "SetDelete",
+        target: state.proxy as Set<unknown>,
+        value: key,
+      })
       return target.delete(key)
     })
   }
@@ -106,6 +116,10 @@ export function createSetHandler(state: ChangeProxyState): ProxyHandler<object> 
       t.notify(cs?.setSize ?? null)
       t.notify(cs?.setKeys ?? null)
       t.notify(cs?.setClear ?? null)
+      t.notifySubscription(state, {
+        type: "SetClear",
+        target: state.proxy as Set<unknown>,
+      })
       target.clear()
     })
   }
