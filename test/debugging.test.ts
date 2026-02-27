@@ -246,7 +246,7 @@ describe("Debugging and Logging", () => {
   })
 
   describe("Change notification events", () => {
-    it("should emit BeforeChangeNotified and AfterChangeNotified", () => {
+    it("should emit ChangeNotified with phase for after-callback", () => {
       const events: ChangeEvent[] = []
       const domain = Changes.create({ logger: (e) => events.push(e) })
 
@@ -258,13 +258,59 @@ describe("Debugging and Logging", () => {
 
       state.x = 1
 
-      const beforeEvent = events.find((e) => e.type === "BeforeChangeNotified")
-      const afterEvent = events.find((e) => e.type === "AfterChangeNotified")
+      const notifyEvents = events.filter((e) => e.type === "ChangeNotified")
+      assert.equal(notifyEvents.length, 1)
+      assert.equal(notifyEvents[0].phase, "after")
+      assert.equal(notifyEvents[0].source, "state.x")
+    })
 
-      assert.ok(beforeEvent)
-      assert.ok(afterEvent)
-      assert.equal(beforeEvent.source, "state.x")
-      assert.equal(afterEvent.source, "state.x")
+    it("should emit ChangeNotified with phase for before and after callbacks", () => {
+      const events: ChangeEvent[] = []
+      const domain = Changes.create({ logger: (e) => events.push(e) })
+
+      const state = domain.enableChanges({ x: 0 }, "state")
+      domain.detectChanges(
+        () => { void state.x },
+        {
+          before: () => {
+            return () => {} // return an after callback
+          },
+        },
+      )
+
+      // Clear events from detectChanges setup
+      events.length = 0
+
+      state.x = 1
+
+      const notifyEvents = events.filter((e) => e.type === "ChangeNotified")
+      assert.equal(notifyEvents.length, 2)
+      assert.equal(notifyEvents[0].phase, "before")
+      assert.equal(notifyEvents[1].phase, "after")
+    })
+
+    it("should emit only before phase if no after callback returned", () => {
+      const events: ChangeEvent[] = []
+      const domain = Changes.create({ logger: (e) => events.push(e) })
+
+      const state = domain.enableChanges({ x: 0 }, "state")
+      domain.detectChanges(
+        () => { void state.x },
+        {
+          before: () => {
+            // No return value means no after callback
+          },
+        },
+      )
+
+      // Clear events from detectChanges setup
+      events.length = 0
+
+      state.x = 1
+
+      const notifyEvents = events.filter((e) => e.type === "ChangeNotified")
+      assert.equal(notifyEvents.length, 1)
+      assert.equal(notifyEvents[0].phase, "before")
     })
   })
 

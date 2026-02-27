@@ -90,68 +90,50 @@ export class ChangeTransaction {
       // Plain function — treated as after callback
       this.afterNotifications.push(() => {
         logger?.({
-          type: "BeforeChangeNotified",
+          type: "ChangeNotified",
           domain: this.domain.name,
           transaction: this.id,
           source: sourceName,
+          phase: "after",
           detectChanges: listener.detectChangesName,
         })
         cb()
-        logger?.({
-          type: "AfterChangeNotified",
-          domain: this.domain.name,
-          transaction: this.id,
-          source: sourceName,
-          detectChanges: listener.detectChangesName,
-        })
       })
     } else if ("before" in cb) {
       logger?.({
-        type: "BeforeChangeNotified",
+        type: "ChangeNotified",
         domain: this.domain.name,
         transaction: this.id,
         source: sourceName,
+        phase: "before",
         detectChanges: listener.detectChangesName,
       })
       const result = cb.before()
       if (typeof result === "function") {
         const afterFn = result
         this.afterNotifications.push(() => {
-          afterFn()
           logger?.({
-            type: "AfterChangeNotified",
+            type: "ChangeNotified",
             domain: this.domain.name,
             transaction: this.id,
             source: sourceName,
+            phase: "after",
             detectChanges: listener.detectChangesName,
           })
-        })
-      } else {
-        logger?.({
-          type: "AfterChangeNotified",
-          domain: this.domain.name,
-          transaction: this.id,
-          source: sourceName,
-          detectChanges: listener.detectChangesName,
+          afterFn()
         })
       }
     } else {
       this.afterNotifications.push(() => {
         logger?.({
-          type: "BeforeChangeNotified",
+          type: "ChangeNotified",
           domain: this.domain.name,
           transaction: this.id,
           source: sourceName,
+          phase: "after",
           detectChanges: listener.detectChangesName,
         })
         cb.after()
-        logger?.({
-          type: "AfterChangeNotified",
-          domain: this.domain.name,
-          transaction: this.id,
-          source: sourceName,
-          detectChanges: listener.detectChangesName,
-        })
       })
     }
   }

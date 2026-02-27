@@ -100,18 +100,11 @@ ChangeEvent = one of the following
 }
 
 {
-  type: "BeforeChangeNotified"
+  type: "ChangeNotified"
   domain: {domain name}
   transaction: {transaction id}
   source: {change source name}
-  detectChanges: {ChangeDetection name}
-}
-
-{
-  type: "AfterChangeNotified"
-  domain: {domain name}
-  transaction: {generated transaction id}
-  source: {change source name}
+  phase: "before" | "after"
   detectChanges: {ChangeDetection name}
 }
 

@@ -11,8 +11,7 @@ export type ChangeEventLogger = (event: ChangeEvent) => void
 export type ChangeEvent =
   | TransactionStarted
   | TransactionEnded
-  | BeforeChangeNotified
-  | AfterChangeNotified
+  | ChangeNotified
   | DetectChangesEntered
   | DetectChangesExited
   | DetectChangesSuspended
@@ -31,19 +30,12 @@ export interface TransactionEnded {
   transaction: number
 }
 
-export interface BeforeChangeNotified {
-  type: "BeforeChangeNotified"
+export interface ChangeNotified {
+  type: "ChangeNotified"
   domain: string
   transaction: number
   source: string
-  detectChanges: string
-}
-
-export interface AfterChangeNotified {
-  type: "AfterChangeNotified"
-  domain: string
-  transaction: number
-  source: string
+  phase: "before" | "after"
   detectChanges: string
 }
 
