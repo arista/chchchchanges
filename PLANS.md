@@ -4,9 +4,7 @@ This document tracks the roadmap and planned features for chchchchanges
 
 ## Current Focus
 
-Look at the changes in design.md that expose more functionality for CachedFunctions.  This will also require updating the README.md
-
-Do this on branch nsa-cachedfunction-plus
+Look at the new subscriptions.md and changes to design.md.  Evaluate to make sure they make sense, and that they capture the different changes that should be reported.  Also evaluate potential changes to README.md.
 
 ## TODO
 

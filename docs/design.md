@@ -13,6 +13,8 @@ Changes {
   enableChanges<T>(val: T): T
   detectChanges<T>(f: ()=>T, onChange: ChangeCallback)
   createCachedFunction<T>(f: ()=>T): CachedFunction
+  subscribe<T extends Object>(obj T, listener: ChangeListener): T
+  unsubscribe<T>(T, listener)
 }
 
 ChangeDomain {
@@ -24,6 +26,9 @@ ChangeDomain {
 
   // Shorthand for "wrapping" a function in a new function that caches the result of executing f(), while also watching for any changes in dependencies.  The resulting function also acts as a ChangeSource, which means that it can be recorded as a dependency by detectChanges.
   createCachedFunction<T>(f: ()=>T): ()=>T
+
+  subscribe<T extends Object>(obj T, listener: ChangeListener): T
+  unsubscribe<T>(T, listener)
 }
 
 // Defines a callback that should be called either before the change has taken effect, or after the change has taken effect.  Defaults to after.  If before, the function has the opportunity to return a function that should also be called after the change has taken effect.
@@ -60,6 +65,8 @@ CachedFunction<T> {
 CachedFunctionListener = ()=>void
 
 ```
+
+See [subscriptions](./subscriptions.md) for an explanation of the ChangeDomain.subscribe/unsubscribe methods.
 
 ## Internal functions and structures
 
