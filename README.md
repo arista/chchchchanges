@@ -86,6 +86,31 @@ const grandTotal = Changes.createCachedFunction(() => subtotal.call() + tax.call
 // — not every individual watcher
 ```
 
+## Subscriptions
+
+Subscribe directly to an object to receive detailed change notifications:
+
+```ts
+const state = Changes.enableChanges({ count: 0 })
+
+Changes.subscribe(state, (change) => {
+  console.log(change.type, change.prop, change.value)
+})
+
+state.count = 5  // logs: "ObjectSet" "count" 5
+```
+
+Subscriptions report the specific mutation — property name, new value, array method called, etc. Use before-callbacks to capture state before the change:
+
+```ts
+Changes.subscribe(state, {
+  before: (change) => {
+    const oldVal = state[change.prop]
+    return () => console.log(`${change.prop}: ${oldVal} -> ${state[change.prop]}`)
+  },
+})
+```
+
 ## Cleanup
 
 Call `remove()` to stop listening. Both `ChangeDetecting` and `CachedFunction` support this:
@@ -119,6 +144,8 @@ Top-level entry point. Uses a shared global `ChangeDomain`.
 | `enableChanges<T>(val: T): T` | Wrap a value for change tracking |
 | `detectChanges<T>(f: () => T, onChange): ChangeDetecting<T>` | Track dependencies and get notified on change |
 | `createCachedFunction<T>(f: () => T): CachedFunction<T>` | Create a cached, auto-invalidating computation |
+| `subscribe<T extends Object>(obj: T, listener): T` | Subscribe to changes on an object |
+| `unsubscribe<T extends Object>(obj: T, listener)` | Remove a subscription |
 | `createDomain(): ChangeDomain` | Create an independent tracking domain |
 | `globalDomain` | The shared `ChangeDomain` used by the shorthand methods |
 
@@ -126,7 +153,7 @@ Top-level entry point. Uses a shared global `ChangeDomain`.
 
 An isolated change-tracking scope. Objects from one domain cannot be used in another.
 
-Has the same `enableChanges`, `detectChanges`, and `createCachedFunction` methods as `Changes`, but scoped to this domain.
+Has the same `enableChanges`, `detectChanges`, `createCachedFunction`, `subscribe`, and `unsubscribe` methods as `Changes`, but scoped to this domain.
 
 ### `ChangeDetecting<T>`
 
