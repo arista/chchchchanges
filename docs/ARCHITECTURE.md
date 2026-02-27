@@ -52,8 +52,6 @@ When an application obtains a ChangeContext from a ChangeDomain, then runs a Cha
 
 An Object can only be associated with one ChangeDomain.  If an attempt is made to wrap an Object in a ChangeProxy from another ChangeDomain, the result will be an error.
 
-While the application can explicitly create ChangeDomains, there is also an implicit global ChangeDomain, that is used by default.  Most applications will likely stick to using that global ChangeDomain, but if an application for some reason needs to "segment" changes, it can use this ChangeDomain mechanism.
-
 ### ChangeTransaction
 
 When a ChangeProxy detects change that will be notified through ChangeSources, that process can actually get fairly complex.  The process is encapsulated by a [ChangeTransaction](./change-transaction.md).
@@ -75,3 +73,7 @@ The bulk of the system is the work done by the ChangeProxies and the ChangeSourc
 ## Technical Design
 
 The API and internal design are [detailed here](./design.md)
+
+## Logging and Debugging
+
+The debugging/logging mechanism is [described here](./debugging.md)

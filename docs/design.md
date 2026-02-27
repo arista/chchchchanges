@@ -6,20 +6,20 @@ Technical design
 
 ```
 Changes {
-  createDomain(): ChangeDomain
-  get globalDomain(): ChangeDomain
-
-  // Shorthand for calling these functions on the globalDomain
-  enableChanges<T>(val: T): T
-  detectChanges<T>(f: ()=>T, onChange: ChangeCallback)
-  createCachedFunction<T>(f: ()=>T): CachedFunction
-  subscribe<T extends Object>(obj T, listener: ChangeListener): T
-  unsubscribe<T>(T, listener)
+  create(config?: ChangesConfig): ChangeDomain
 }
+
+ChangesConfig {
+  name?: string
+  logger: ChangeEventLogger
+}
+
+// See [debugging](./debugging.md)]
+ChangeEventLogger = (e: ChangeEvent) => void
 
 ChangeDomain {
   // Returns a "change-enabled" form of val that should be used going forward by the application in place of val.  A non-Object value, or a value already change-enabled, will be returned as-is, otherwise the value will be wrapped in a ChangeProxy, allowing it to report changes when accessed by functions called through detectChanges.  Any values returned through the change-enabled Object will also be passed through enableChanges.
-  enableChanges<T>(val: T): T
+  enableChanges<T>(val: T, name?: string): T
 
   // Executes the given function, while watching for any dependencies on change-enabled values (i.e., values passed through enableChanges).  If one of those dependencies changes later, the onChange callback will be executed.  If detectChanges is already running when this is called, the former will call will be "suspended" while this one runs, then will be resumed when that call completes.  The function must be synchronous - async functions are not supported.
   detectChanges<T>(f: ()=>T, onChange: ChangeCallback): ChangeDetecting<T>
