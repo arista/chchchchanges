@@ -14,8 +14,6 @@ ChangeListener =
   | {after: AfterChangeListener}
 BeforeChangeListener = (change:Change)=>void|AfterCallback
 AfterChangeListener = (change:Change)=>void
-
-ChangeListener = (change: Change)=>void
 ```
 
 The subscribe method takes an object and adds a function that will be called for each change made on that object.  The object is first change-enabled, and the result of that is returned.  The unsubscribe method removes a listener (ignoring if the listener hasn't been added).
@@ -40,7 +38,6 @@ An Object's changes basically reflect the traps on a Proxy:
 {
   type: "ObjectPreventExtensions"
   target
-  prototype
 }
 
 {
@@ -48,6 +45,12 @@ An Object's changes basically reflect the traps on a Proxy:
   target
   key
   descriptor
+}
+
+{
+  type: "ObjectDeleteProperty"
+  target
+  prop
 }
 
 {
@@ -74,6 +77,7 @@ Array changes inherit the Object changes above.  However, when array mutator met
 {
   type: "ArrayCopyWithin"
   target
+  dest
   start
   end
 }
@@ -100,11 +104,22 @@ Array changes inherit the Object changes above.  However, when array mutator met
 }
 
 {
+  type: "ArrayShift"
+  target
+}
+
+{
   type: "ArraySplice"
   target
   start
   deleteCount
   items?
+}
+
+{
+  type: "ArrayUnshift"
+  target
+  elements
 }
 
 ```
