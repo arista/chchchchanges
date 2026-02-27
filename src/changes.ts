@@ -2,6 +2,7 @@ import type { ChangeCallback } from "./change-callback.js"
 import type { ChangeDetecting } from "./change-domain.js"
 import { ChangeDomain } from "./change-domain.js"
 import type { CachedFunction } from "./cached-function.js"
+import type { SubscriptionListener } from "./change-types.js"
 
 const globalDomain = new ChangeDomain()
 
@@ -24,5 +25,13 @@ export const Changes = {
 
   createCachedFunction<T>(fn: () => T): CachedFunction<T> {
     return globalDomain.createCachedFunction(fn)
+  },
+
+  subscribe<T extends object>(obj: T, listener: SubscriptionListener): T {
+    return globalDomain.subscribe(obj, listener)
+  },
+
+  unsubscribe<T extends object>(obj: T, listener: SubscriptionListener): void {
+    globalDomain.unsubscribe(obj, listener)
   },
 }
