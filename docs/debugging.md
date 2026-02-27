@@ -50,6 +50,10 @@ An Array has only one ChangeSource, whose name is the same as the Array's base n
 * keys - {base name}.<keys>
 * clear - {base name}.<clear>
 
+### CachedFunction ChangeSources
+
+A CachedFunction has only one ChangeSource, whose name is the same as the CachedFunction's base name.
+
 ## Chained names
 
 It's expected that an application will directly call enableChanges only a few times, maybe even only once to establish a root object.  Other calls to enableChanges are implied when objects are automatically wrapped as arguments or return values to already-enabled objects.  For those cases, it's useful if names could be assigned to those objects that would be meaninful to the application.
@@ -58,16 +62,19 @@ For example, if an enabled object is called "Profile", and another object is set
 
 To do this, we apply these rules to the implicit enableChanges call performed at various stages:
 
-* Object.set(property, value) - the value is assigned a base name of "{Object's base name}.{property}"
-* Object.get(property) -> value - the value is assigned a base name of "{Object's base name}.{property}"
+* Object.set(property, value) - the value is assigned a base name of "{Object's base name}.{property}".  Note, special rules (below) are applied if the Object is an Array
+* Object.get(property) -> value - the value is assigned a base name of "{Object's base name}.{property}".  Note, special rules (Below) are applied if the Object is an Array
 * Map.set(key, value) - the value is assigned a base name of "{Map's base name}.{key}"
 * Map.get(key) -> value - the value is assigned a base name of "{Map's base name}.{key}"
+
+* Array.set(property, value) - the value is assigned a base name of "{Array's base name}[{property}]"
+* Array.get(property, value) - the value is assigned a base name of "{Array's base name}[{property}]"
 
 Note that for the above cases, once a base name is assigned, it remains as it was set, even if that value is moved to a different object, removed from the object, etc.  The exception is array element values.  For those items, the base name should be updated every time Object.set/get is called.
 
 ## Named Listeners
 
-Each invocation of detectChanges() is called a "ChangeListener", and is assigned a name based on a generated id.  If detectChanges is called with a name, then the ChangeListener is named {name}#{generated id}.  If no name is provided, then the listener is named "ChangeListener#{generated id}".
+Each invocation of detectChanges() is called a "ChangeDetection", and is assigned a name based on a generated id.  If detectChanges is called with a name, then the ChangeDetection is named {name}#{generated id}.  If no name is provided, then the listener is named "DetectChanges#{generated id}".
 
 ## Named Domains
 
@@ -78,6 +85,8 @@ Domains can optionally be created with names.  Otherwise they are assigned name 
 The following Events are generated for logging and debugging:
 
 ```
+ChangeEvent = one of the following
+
 {
   type: "TransactionStarted"
   domain: {domain name}
@@ -95,7 +104,7 @@ The following Events are generated for logging and debugging:
   domain: {domain name}
   transaction: {transaction id}
   source: {change source name}
-  listener: {change listener name}
+  detectChanges: {ChangeDetection name}
 }
 
 {
@@ -103,33 +112,33 @@ The following Events are generated for logging and debugging:
   domain: {domain name}
   transaction: {generated transaction id}
   source: {change source name}
-  listener: {change listener name}
+  detectChanges: {ChangeDetection name}
 }
 
 {
-  type: "ChangeListenerEntered"
+  type: "DetectChangesEntered"
   domain: {domain name}
-  listener: {change listener name}
+  detectChanges: {ChangeDetection name}
 }
 
 {
-  type: "ChangeListenerExited"
+  type: "DetectChangesExited"
   domain: {domain name}
-  listener: {change listener name}
+  detectChanges: {ChangeDetection name}
 }
 
 // Indicates that a detectChanges call was interrupted by nested detectChanges call
 {
-  type: "ChangeListenerSuspended"
+  type: "DetectChangesSuspended"
   domain: {domain name}
-  listener: {change listener name}
+  detectChanges: {ChangeDetection name}
 }
 
 // Indicates that a detectChanges call resumed after a nested detectChanges call exited
 {
-  type: "ChangeListenerResumed"
+  type: "DetectChangesResumed"
   domain: {domain name}
-  listener: {change listener name}
+  detectChanges: {ChangeDetection name}
 }
 
 // Indicates that a detectChanges call identified a dependency on a ChangeSource
@@ -137,7 +146,7 @@ The following Events are generated for logging and debugging:
   type: "ChangeSourceReferenced"
   domain: {domain name}
   source: {change source name}
-  listener: {change listener name}
+  detectChanges: {ChangeDetection name}
 }
 
 ```

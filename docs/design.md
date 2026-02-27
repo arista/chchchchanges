@@ -11,7 +11,7 @@ Changes {
 
 ChangesConfig {
   name?: string
-  logger: ChangeEventLogger
+  logger?: ChangeEventLogger
 }
 
 // See [debugging](./debugging.md)]
@@ -22,10 +22,10 @@ ChangeDomain {
   enableChanges<T>(val: T, name?: string): T
 
   // Executes the given function, while watching for any dependencies on change-enabled values (i.e., values passed through enableChanges).  If one of those dependencies changes later, the onChange callback will be executed.  If detectChanges is already running when this is called, the former will call will be "suspended" while this one runs, then will be resumed when that call completes.  The function must be synchronous - async functions are not supported.
-  detectChanges<T>(f: ()=>T, onChange: ChangeCallback): ChangeDetecting<T>
+  detectChanges<T>(f: ()=>T, onChange: ChangeCallback, name?: string): ChangeDetecting<T>
 
   // Shorthand for "wrapping" a function in a new function that caches the result of executing f(), while also watching for any changes in dependencies.  The resulting function also acts as a ChangeSource, which means that it can be recorded as a dependency by detectChanges.
-  createCachedFunction<T>(f: ()=>T): ()=>T
+  createCachedFunction<T>(f: ()=>T, name?: string): ()=>T
 
   subscribe<T extends Object>(obj T, listener: ChangeListener): T
   unsubscribe<T>(T, listener)
