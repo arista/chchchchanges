@@ -11,7 +11,14 @@ export interface CachedFunction<T> {
   removeListener(listener: CachedFunctionListener): void
 }
 
-export function createCachedFunction<T>(domain: ChangeDomain, fn: () => T): CachedFunction<T> {
+export function createCachedFunction<T>(
+  domain: ChangeDomain,
+  fn: () => T,
+  name?: string,
+): CachedFunction<T> {
+  const cfId = domain.generateCachedFunctionId()
+  const cfName = name ?? `CachedFunction#${cfId}`
+
   let cacheValid = false
   let cachedValue: T | null = null
   let changeSource: ChangeSource | null = null
@@ -29,11 +36,18 @@ export function createCachedFunction<T>(domain: ChangeDomain, fn: () => T): Cach
     const ctx = domain.changeContext
     if (ctx) {
       if (!changeSource) {
-        changeSource = new ChangeSource(() => {
+        // CachedFunction has only one ChangeSource, with the same name as the CF
+        changeSource = new ChangeSource(cfName, () => {
           changeSource = null
         })
       }
       changeSource.subscribe(ctx.listener)
+      domain.logger?.({
+        type: "ChangeSourceReferenced",
+        domain: domain.name,
+        source: changeSource.name,
+        detectChanges: ctx.name,
+      })
     }
 
     if (cacheValid) {
@@ -47,18 +61,22 @@ export function createCachedFunction<T>(domain: ChangeDomain, fn: () => T): Cach
     }
 
     // Evaluate with detectChanges to track dependencies
-    detecting = domain.detectChanges(fn, () => {
-      // After-callback: invalidate cache and notify CF's own listeners
-      cacheValid = false
-      if (detecting) {
-        detecting.remove()
-        detecting = null
-      }
-      domain.withTransaction((t) => {
-        t.notify(changeSource)
-      })
-      notifyListeners()
-    })
+    detecting = domain.detectChanges(
+      fn,
+      () => {
+        // After-callback: invalidate cache and notify CF's own listeners
+        cacheValid = false
+        if (detecting) {
+          detecting.remove()
+          detecting = null
+        }
+        domain.withTransaction((t) => {
+          t.notify(changeSource)
+        })
+        notifyListeners()
+      },
+      `${cfName}:detect`,
+    )
 
     cachedValue = enableChanges(detecting.result, domain) as T
     cacheValid = true

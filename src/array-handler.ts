@@ -31,11 +31,18 @@ function subscribe(state: ChangeProxyState): void {
   if (!ctx) return
   const cs = ensureCS(state)
   if (!cs.array) {
-    cs.array = new ChangeSource(() => {
+    // Array has only one ChangeSource, whose name is the same as the Array's base name
+    cs.array = new ChangeSource(state.name, () => {
       cs.array = null
     })
   }
   cs.array.subscribe(ctx.listener)
+  state.changeDomain.logger?.({
+    type: "ChangeSourceReferenced",
+    domain: state.changeDomain.name,
+    source: cs.array.name,
+    detectChanges: ctx.name,
+  })
 }
 
 function notify(state: ChangeProxyState, t: { notify(source: ChangeSource | null): void }): void {
@@ -158,7 +165,9 @@ export function createArrayHandler(state: ChangeProxyState): ProxyHandler<object
         if (desc && !desc.configurable && "value" in desc && !desc.writable) {
           return value
         }
-        return enableChanges(value, domain)
+        // Array element names use bracket notation and update on each access
+        const childName = `${state.name}[${String(prop)}]`
+        return enableChanges(value, domain, childName)
       }
       return value
     },
@@ -169,7 +178,8 @@ export function createArrayHandler(state: ChangeProxyState): ProxyHandler<object
     },
 
     set(target, prop, value, receiver) {
-      const wrappedValue = enableChanges(value, domain)
+      const childName = `${state.name}[${String(prop)}]`
+      const wrappedValue = enableChanges(value, domain, childName)
       if (domain.changeContext != null) {
         return Reflect.set(target, prop, wrappedValue, receiver)
       }
@@ -191,7 +201,8 @@ export function createArrayHandler(state: ChangeProxyState): ProxyHandler<object
 
     defineProperty(target, prop, descriptor) {
       if ("value" in descriptor) {
-        descriptor = { ...descriptor, value: enableChanges(descriptor.value, domain) }
+        const childName = `${state.name}[${String(prop)}]`
+        descriptor = { ...descriptor, value: enableChanges(descriptor.value, domain, childName) }
       }
       if (domain.changeContext != null) {
         return Reflect.defineProperty(target, prop, descriptor)
@@ -206,7 +217,8 @@ export function createArrayHandler(state: ChangeProxyState): ProxyHandler<object
       subscribe(state)
       const desc = Reflect.getOwnPropertyDescriptor(target, prop)
       if (desc && "value" in desc) {
-        return { ...desc, value: enableChanges(desc.value, domain) }
+        const childName = `${state.name}[${String(prop)}]`
+        return { ...desc, value: enableChanges(desc.value, domain, childName) }
       }
       return desc
     },

@@ -2,23 +2,31 @@ import { describe, it } from "node:test"
 import assert from "node:assert/strict"
 import { ChangeSource, ChangeListener } from "../src/change-source.js"
 import { ChangeTransaction } from "../src/change-transaction.js"
+import { ChangeDomain } from "../src/change-domain.js"
+
+let sourceCounter = 0
 
 function makeSource(): ChangeSource {
-  return new ChangeSource(() => {})
+  return new ChangeSource(`test.source${++sourceCounter}`, () => {})
 }
 
 function makeRemovableSource() {
   const state = { source: null as unknown as ChangeSource, removed: false }
-  state.source = new ChangeSource(() => {
+  state.source = new ChangeSource(`test.removable${++sourceCounter}`, () => {
     state.removed = true
   })
   return state
 }
 
+function makeTransaction(): ChangeTransaction {
+  const domain = new ChangeDomain()
+  return new ChangeTransaction(1, domain)
+}
+
 describe("ChangeTransaction", () => {
   describe("notify", () => {
     it("should ignore null source", () => {
-      const t = new ChangeTransaction()
+      const t = makeTransaction()
       t.notify(null)
       assert.equal(t.afterNotifications.length, 0)
       assert.equal(t.changeSources.size, 0)
@@ -26,7 +34,7 @@ describe("ChangeTransaction", () => {
 
     it("should add source to changeSources set", () => {
       const source = makeSource()
-      const t = new ChangeTransaction()
+      const t = makeTransaction()
 
       t.notify(source)
 
@@ -40,10 +48,10 @@ describe("ChangeTransaction", () => {
         before: () => {
           order.push("before")
         },
-      })
+      }, "TestDetect")
       source.subscribe(listener)
 
-      const t = new ChangeTransaction()
+      const t = makeTransaction()
       t.notify(source)
       order.push("after-notify")
 
@@ -60,10 +68,10 @@ describe("ChangeTransaction", () => {
             order.push("after")
           }
         },
-      })
+      }, "TestDetect")
       source.subscribe(listener)
 
-      const t = new ChangeTransaction()
+      const t = makeTransaction()
       t.notify(source)
       order.push("between")
       t.complete()
@@ -76,10 +84,10 @@ describe("ChangeTransaction", () => {
       const order: string[] = []
       const listener = new ChangeListener(() => {
         order.push("after")
-      })
+      }, "TestDetect")
       source.subscribe(listener)
 
-      const t = new ChangeTransaction()
+      const t = makeTransaction()
       t.notify(source)
       order.push("between")
       t.complete()
@@ -94,10 +102,10 @@ describe("ChangeTransaction", () => {
         after: () => {
           order.push("after")
         },
-      })
+      }, "TestDetect")
       source.subscribe(listener)
 
-      const t = new ChangeTransaction()
+      const t = makeTransaction()
       t.notify(source)
       order.push("between")
       t.complete()
@@ -107,10 +115,10 @@ describe("ChangeTransaction", () => {
 
     it("should clear listeners from the source", () => {
       const source = makeSource()
-      const listener = new ChangeListener(() => {})
+      const listener = new ChangeListener(() => {}, "TestDetect")
       source.subscribe(listener)
 
-      const t = new ChangeTransaction()
+      const t = makeTransaction()
       t.notify(source)
 
       assert.ok(!source.hasListeners)
@@ -119,11 +127,11 @@ describe("ChangeTransaction", () => {
     it("should unsubscribe listener from all its sources", () => {
       const source1 = makeSource()
       const source2 = makeSource()
-      const listener = new ChangeListener(() => {})
+      const listener = new ChangeListener(() => {}, "TestDetect")
       source1.subscribe(listener)
       source2.subscribe(listener)
 
-      const t = new ChangeTransaction()
+      const t = makeTransaction()
       t.notify(source1)
 
       // listener was unsubscribed from all sources
@@ -136,13 +144,13 @@ describe("ChangeTransaction", () => {
       const calls: string[] = []
       const listener = new ChangeListener(() => {
         calls.push("called")
-      })
+      }, "TestDetect")
       source.subscribe(listener)
 
       // Pre-mark as notified
       listener.wasNotified = true
 
-      const t = new ChangeTransaction()
+      const t = makeTransaction()
       t.notify(source)
 
       assert.equal(calls.length, 0)
@@ -155,11 +163,11 @@ describe("ChangeTransaction", () => {
       const calls: string[] = []
       const listener = new ChangeListener(() => {
         calls.push("called")
-      })
+      }, "TestDetect")
       source1.subscribe(listener)
       source2.subscribe(listener)
 
-      const t = new ChangeTransaction()
+      const t = makeTransaction()
       t.notify(source1)
       t.notify(source2)
       t.complete()
@@ -170,7 +178,7 @@ describe("ChangeTransaction", () => {
 
     it("should handle notify on source with no listeners", () => {
       const source = makeSource()
-      const t = new ChangeTransaction()
+      const t = makeTransaction()
 
       // Should not throw
       t.notify(source)
@@ -186,14 +194,14 @@ describe("ChangeTransaction", () => {
       const order: number[] = []
       const listener1 = new ChangeListener(() => {
         order.push(1)
-      })
+      }, "TestDetect1")
       const listener2 = new ChangeListener(() => {
         order.push(2)
-      })
+      }, "TestDetect2")
       source1.subscribe(listener1)
       source2.subscribe(listener2)
 
-      const t = new ChangeTransaction()
+      const t = makeTransaction()
       t.notify(source1)
       t.notify(source2)
       t.complete()
@@ -206,14 +214,14 @@ describe("ChangeTransaction", () => {
       const order: number[] = []
 
       // This listener's after-callback will push another after-notification
-      const t = new ChangeTransaction()
+      const t = makeTransaction()
       const listener = new ChangeListener(() => {
         order.push(1)
         // Simulate a change during after-callback that adds more work
         t.afterNotifications.push(() => {
           order.push(2)
         })
-      })
+      }, "TestDetect")
       source.subscribe(listener)
 
       t.notify(source)
@@ -224,10 +232,10 @@ describe("ChangeTransaction", () => {
 
     it("should remove empty ChangeSources after all after-notifications", () => {
       const state = makeRemovableSource()
-      const listener = new ChangeListener(() => {})
+      const listener = new ChangeListener(() => {}, "TestDetect")
       state.source.subscribe(listener)
 
-      const t = new ChangeTransaction()
+      const t = makeTransaction()
       t.notify(state.source)
       t.complete()
 
@@ -237,12 +245,12 @@ describe("ChangeTransaction", () => {
 
     it("should not remove ChangeSources that still have listeners", () => {
       const state = makeRemovableSource()
-      const listener1 = new ChangeListener(() => {})
-      const listener2 = new ChangeListener(() => {})
+      const listener1 = new ChangeListener(() => {}, "TestDetect1")
+      const listener2 = new ChangeListener(() => {}, "TestDetect2")
       state.source.subscribe(listener1)
       state.source.subscribe(listener2)
 
-      const t = new ChangeTransaction()
+      const t = makeTransaction()
 
       // Clear both listeners, then re-add one to simulate a source that still has subscribers
       state.source.listAndClearListeners()
@@ -262,18 +270,18 @@ describe("ChangeTransaction", () => {
       // Listener on source2 re-subscribes a new listener to source1 during after-callback
       const listener2 = new ChangeListener(() => {
         order.push("after-callback")
-        const newListener = new ChangeListener(() => {})
+        const newListener = new ChangeListener(() => {}, "TestDetectNew")
         state1.source.subscribe(newListener)
-      })
+      }, "TestDetect2")
       source2.subscribe(listener2)
 
       // Listener on source1 with no-op after
       const listener1 = new ChangeListener(() => {
         order.push("source1-after")
-      })
+      }, "TestDetect1")
       state1.source.subscribe(listener1)
 
-      const t = new ChangeTransaction()
+      const t = makeTransaction()
       t.notify(state1.source)
       t.notify(source2)
       t.complete()
@@ -296,10 +304,10 @@ describe("ChangeTransaction", () => {
             order.push("after-2")
           }
         },
-      })
+      }, "TestDetect2")
       source2.subscribe(listener2)
 
-      const t = new ChangeTransaction()
+      const t = makeTransaction()
 
       const listener1 = new ChangeListener({
         before: () => {
@@ -310,7 +318,7 @@ describe("ChangeTransaction", () => {
             order.push("after-1")
           }
         },
-      })
+      }, "TestDetect1")
       source1.subscribe(listener1)
 
       t.notify(source1)
@@ -325,16 +333,16 @@ describe("ChangeTransaction", () => {
       const source1 = makeSource()
       const source2 = makeSource()
 
-      const t = new ChangeTransaction()
+      const t = makeTransaction()
 
-      const listener2 = new ChangeListener(() => {})
+      const listener2 = new ChangeListener(() => {}, "TestDetect2")
       source2.subscribe(listener2)
 
       const listener1 = new ChangeListener({
         before: () => {
           t.notify(source2)
         },
-      })
+      }, "TestDetect1")
       source1.subscribe(listener1)
 
       t.notify(source1)

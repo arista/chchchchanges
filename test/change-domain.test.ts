@@ -6,10 +6,11 @@ import { ChangeDomain, ChangeContext } from "../src/change-domain.js"
 describe("ChangeContext", () => {
   it("should create a listener from the onChange callback", () => {
     const cb = () => {}
-    const ctx = new ChangeContext(cb)
+    const ctx = new ChangeContext(cb, "TestContext")
 
     assert.equal(ctx.listener.callback, cb)
     assert.equal(ctx.listener.wasNotified, false)
+    assert.equal(ctx.name, "TestContext")
   })
 })
 
@@ -68,7 +69,7 @@ describe("ChangeDomain", () => {
 
     it("should fire onChange when a subscribed source is notified", () => {
       const domain = new ChangeDomain()
-      const source = new ChangeSource(() => {})
+      const source = new ChangeSource("test.source", () => {})
       const calls: string[] = []
 
       domain.detectChanges(
@@ -91,7 +92,7 @@ describe("ChangeDomain", () => {
 
     it("should fire before-callback on notification", () => {
       const domain = new ChangeDomain()
-      const source = new ChangeSource(() => {})
+      const source = new ChangeSource("test.source", () => {})
       const order: string[] = []
 
       domain.detectChanges(
@@ -118,8 +119,8 @@ describe("ChangeDomain", () => {
 
     it("should suspend and resume outer context on nested detectChanges", () => {
       const domain = new ChangeDomain()
-      const outerSource = new ChangeSource(() => {})
-      const innerSource = new ChangeSource(() => {})
+      const outerSource = new ChangeSource("test.source", () => {})
+      const innerSource = new ChangeSource("test.source", () => {})
       const outerCalls: string[] = []
       const innerCalls: string[] = []
 
@@ -163,7 +164,7 @@ describe("ChangeDomain", () => {
 
     it("should allow remove() to unsubscribe from all sources", () => {
       const domain = new ChangeDomain()
-      const source = new ChangeSource(() => {})
+      const source = new ChangeSource("test.source", () => {})
       const calls: string[] = []
 
       const detecting = domain.detectChanges(
@@ -199,7 +200,7 @@ describe("ChangeDomain", () => {
 
     it("should create a new transaction and complete it", () => {
       const domain = new ChangeDomain()
-      const source = new ChangeSource(() => {})
+      const source = new ChangeSource("test.source", () => {})
       const calls: string[] = []
 
       const listener = new ChangeListener(() => {
@@ -234,7 +235,7 @@ describe("ChangeDomain", () => {
 
     it("should only complete when outermost withTransaction finishes", () => {
       const domain = new ChangeDomain()
-      const source = new ChangeSource(() => {})
+      const source = new ChangeSource("test.source", () => {})
       const calls: string[] = []
 
       const listener = new ChangeListener(() => {

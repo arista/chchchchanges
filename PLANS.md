@@ -4,7 +4,11 @@ This document tracks the roadmap and planned features for chchchchanges
 
 ## Current Focus
 
-Look at the new subscriptions.md and changes to design.md.  Evaluate to make sure they make sense, and that they capture the different changes that should be reported.  Also evaluate potential changes to README.md.
+Look at debugging.md for a new feature description.  This will require some updates to various API's - in particular, adding an optional name, as well as removing the idea of a "global" ChangeDomain.  The README's examples will probably have to be updated, and a new section added for logging.
+
+Start by analyzing the new feature to see if anything is missing or incorrect.
+
+Eventually this feature will need to be implemented.
 
 ## TODO
 

@@ -1,37 +1,8 @@
-import type { ChangeCallback } from "./change-callback.js"
-import type { ChangeDetecting } from "./change-domain.js"
 import { ChangeDomain } from "./change-domain.js"
-import type { CachedFunction } from "./cached-function.js"
-import type { SubscriptionListener } from "./change-types.js"
-
-const globalDomain = new ChangeDomain()
+import type { ChangesConfig } from "./change-event.js"
 
 export const Changes = {
-  get globalDomain(): ChangeDomain {
-    return globalDomain
-  },
-
-  createDomain(): ChangeDomain {
-    return new ChangeDomain()
-  },
-
-  enableChanges<T>(val: T): T {
-    return globalDomain.enableChanges(val)
-  },
-
-  detectChanges<T>(f: () => T, onChange: ChangeCallback): ChangeDetecting<T> {
-    return globalDomain.detectChanges(f, onChange)
-  },
-
-  createCachedFunction<T>(fn: () => T): CachedFunction<T> {
-    return globalDomain.createCachedFunction(fn)
-  },
-
-  subscribe<T extends object>(obj: T, listener: SubscriptionListener): T {
-    return globalDomain.subscribe(obj, listener)
-  },
-
-  unsubscribe<T extends object>(obj: T, listener: SubscriptionListener): void {
-    globalDomain.unsubscribe(obj, listener)
+  create(config?: ChangesConfig): ChangeDomain {
+    return new ChangeDomain(config)
   },
 }

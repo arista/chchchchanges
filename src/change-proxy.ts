@@ -11,6 +11,7 @@ export interface ChangeProxyState {
   proxy: object
   readonly target: object
   readonly changeDomain: ChangeDomain
+  readonly name: string
   changeSources: unknown
   objectSubscriptions: Set<SubscriptionListener> | null
 }
@@ -26,7 +27,7 @@ export function getExistingProxyState(target: object): ChangeProxyState | undefi
   return proxyStateMap.get(target)
 }
 
-export function enableChanges<T>(val: T, domain: ChangeDomain): T {
+export function enableChanges<T>(val: T, domain: ChangeDomain, name?: string): T {
   // Pass through primitives and null/undefined
   if (val === null || val === undefined) return val
   if (typeof val !== "object" && typeof val !== "function") return val
@@ -49,11 +50,16 @@ export function enableChanges<T>(val: T, domain: ChangeDomain): T {
     return targetState.proxy as T
   }
 
+  // Generate name if not provided
+  const objectId = domain.generateObjectId()
+  const objectName = name ?? generateObjectTypeName(val as object, objectId)
+
   // Create new proxy
   const state: ChangeProxyState = {
     proxy: null!,
     target: val as object,
     changeDomain: domain,
+    name: objectName,
     changeSources: null,
     objectSubscriptions: null,
   }
@@ -61,6 +67,13 @@ export function enableChanges<T>(val: T, domain: ChangeDomain): T {
   state.proxy = new Proxy(val as object, handler)
   proxyStateMap.set(val as object, state)
   return state.proxy as T
+}
+
+function generateObjectTypeName(target: object, id: number): string {
+  if (Array.isArray(target)) return `Array#${id}`
+  if (target instanceof Map) return `Map#${id}`
+  if (target instanceof Set) return `Set#${id}`
+  return `Object#${id}`
 }
 
 function createHandler(target: object, state: ChangeProxyState): ProxyHandler<object> {

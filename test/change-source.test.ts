@@ -4,17 +4,23 @@ import { ChangeSource, ChangeListener } from "../src/change-source.js"
 
 describe("ChangeSource", () => {
   it("should subscribe a listener", () => {
-    const source = new ChangeSource(() => {})
-    const listener = new ChangeListener(() => {})
+    const source = new ChangeSource("test.prop", () => {})
+    const listener = new ChangeListener(() => {}, "TestDetect")
 
     source.subscribe(listener)
 
     assert.ok(source.hasListeners)
   })
 
+  it("should have a name", () => {
+    const source = new ChangeSource("obj.property", () => {})
+
+    assert.equal(source.name, "obj.property")
+  })
+
   it("should unsubscribe a listener", () => {
-    const source = new ChangeSource(() => {})
-    const listener = new ChangeListener(() => {})
+    const source = new ChangeSource("test.prop", () => {})
+    const listener = new ChangeListener(() => {}, "TestDetect")
 
     source.subscribe(listener)
     source.unsubscribe(listener)
@@ -23,8 +29,8 @@ describe("ChangeSource", () => {
   })
 
   it("should ignore unsubscribe for non-subscriber", () => {
-    const source = new ChangeSource(() => {})
-    const listener = new ChangeListener(() => {})
+    const source = new ChangeSource("test.prop", () => {})
+    const listener = new ChangeListener(() => {}, "TestDetect")
 
     source.unsubscribe(listener)
 
@@ -32,8 +38,8 @@ describe("ChangeSource", () => {
   })
 
   it("should be idempotent for duplicate subscribe", () => {
-    const source = new ChangeSource(() => {})
-    const listener = new ChangeListener(() => {})
+    const source = new ChangeSource("test.prop", () => {})
+    const listener = new ChangeListener(() => {}, "TestDetect")
 
     source.subscribe(listener)
     source.subscribe(listener)
@@ -44,8 +50,8 @@ describe("ChangeSource", () => {
   })
 
   it("should not create duplicate subscriptions on idempotent subscribe", () => {
-    const source = new ChangeSource(() => {})
-    const listener = new ChangeListener(() => {})
+    const source = new ChangeSource("test.prop", () => {})
+    const listener = new ChangeListener(() => {}, "TestDetect")
 
     source.subscribe(listener)
     source.subscribe(listener)
@@ -54,9 +60,9 @@ describe("ChangeSource", () => {
   })
 
   it("should return listeners and clear on listAndClearListeners", () => {
-    const source = new ChangeSource(() => {})
-    const listener1 = new ChangeListener(() => {})
-    const listener2 = new ChangeListener(() => {})
+    const source = new ChangeSource("test.prop", () => {})
+    const listener1 = new ChangeListener(() => {}, "TestDetect1")
+    const listener2 = new ChangeListener(() => {}, "TestDetect2")
 
     source.subscribe(listener1)
     source.subscribe(listener2)
@@ -69,7 +75,7 @@ describe("ChangeSource", () => {
   })
 
   it("should return empty array when no listeners", () => {
-    const source = new ChangeSource(() => {})
+    const source = new ChangeSource("test.prop", () => {})
 
     const listeners = source.listAndClearListeners()
     assert.equal(listeners.length, 0)
@@ -77,7 +83,7 @@ describe("ChangeSource", () => {
 
   it("should hold a remove callback", () => {
     let removed = false
-    const source = new ChangeSource(() => {
+    const source = new ChangeSource("test.prop", () => {
       removed = true
     })
 
@@ -88,8 +94,8 @@ describe("ChangeSource", () => {
 
 describe("ChangeListener", () => {
   it("should track subscriptions when subscribed to a source", () => {
-    const source = new ChangeSource(() => {})
-    const listener = new ChangeListener(() => {})
+    const source = new ChangeSource("test.prop", () => {})
+    const listener = new ChangeListener(() => {}, "TestDetect")
 
     source.subscribe(listener)
 
@@ -98,11 +104,17 @@ describe("ChangeListener", () => {
     assert.equal(listener.subscriptions[0]?.listener, listener)
   })
 
+  it("should have a detectChangesName", () => {
+    const listener = new ChangeListener(() => {}, "MyWatcher#1")
+
+    assert.equal(listener.detectChangesName, "MyWatcher#1")
+  })
+
   it("should subscribe to multiple sources", () => {
-    const source1 = new ChangeSource(() => {})
-    const source2 = new ChangeSource(() => {})
-    const source3 = new ChangeSource(() => {})
-    const listener = new ChangeListener(() => {})
+    const source1 = new ChangeSource("test.a", () => {})
+    const source2 = new ChangeSource("test.b", () => {})
+    const source3 = new ChangeSource("test.c", () => {})
+    const listener = new ChangeListener(() => {}, "TestDetect")
 
     source1.subscribe(listener)
     source2.subscribe(listener)
@@ -115,9 +127,9 @@ describe("ChangeListener", () => {
   })
 
   it("should unsubscribe from all sources", () => {
-    const source1 = new ChangeSource(() => {})
-    const source2 = new ChangeSource(() => {})
-    const listener = new ChangeListener(() => {})
+    const source1 = new ChangeSource("test.a", () => {})
+    const source2 = new ChangeSource("test.b", () => {})
+    const listener = new ChangeListener(() => {}, "TestDetect")
 
     source1.subscribe(listener)
     source2.subscribe(listener)
@@ -130,13 +142,13 @@ describe("ChangeListener", () => {
   })
 
   it("should start with wasNotified as false", () => {
-    const listener = new ChangeListener(() => {})
+    const listener = new ChangeListener(() => {}, "TestDetect")
 
     assert.equal(listener.wasNotified, false)
   })
 
   it("should allow wasNotified to be set", () => {
-    const listener = new ChangeListener(() => {})
+    const listener = new ChangeListener(() => {}, "TestDetect")
 
     listener.wasNotified = true
 
@@ -145,21 +157,21 @@ describe("ChangeListener", () => {
 
   it("should hold the callback", () => {
     const cb = () => {}
-    const listener = new ChangeListener(cb)
+    const listener = new ChangeListener(cb, "TestDetect")
 
     assert.equal(listener.callback, cb)
   })
 
   it("should hold an object callback with before", () => {
     const before = () => {}
-    const listener = new ChangeListener({ before })
+    const listener = new ChangeListener({ before }, "TestDetect")
 
     assert.deepStrictEqual(listener.callback, { before })
   })
 
   it("should hold an object callback with after", () => {
     const after = () => {}
-    const listener = new ChangeListener({ after })
+    const listener = new ChangeListener({ after }, "TestDetect")
 
     assert.deepStrictEqual(listener.callback, { after })
   })
@@ -167,9 +179,9 @@ describe("ChangeListener", () => {
 
 describe("ChangeSource and ChangeListener integration", () => {
   it("should handle multiple listeners on one source", () => {
-    const source = new ChangeSource(() => {})
-    const listener1 = new ChangeListener(() => {})
-    const listener2 = new ChangeListener(() => {})
+    const source = new ChangeSource("test.prop", () => {})
+    const listener1 = new ChangeListener(() => {}, "TestDetect1")
+    const listener2 = new ChangeListener(() => {}, "TestDetect2")
 
     source.subscribe(listener1)
     source.subscribe(listener2)
@@ -184,8 +196,8 @@ describe("ChangeSource and ChangeListener integration", () => {
   })
 
   it("should handle listener unsubscribe after listAndClearListeners", () => {
-    const source = new ChangeSource(() => {})
-    const listener = new ChangeListener(() => {})
+    const source = new ChangeSource("test.prop", () => {})
+    const listener = new ChangeListener(() => {}, "TestDetect")
 
     source.subscribe(listener)
     source.listAndClearListeners()
@@ -197,9 +209,9 @@ describe("ChangeSource and ChangeListener integration", () => {
   })
 
   it("should handle one listener across multiple sources with partial unsubscribe via listAndClear", () => {
-    const source1 = new ChangeSource(() => {})
-    const source2 = new ChangeSource(() => {})
-    const listener = new ChangeListener(() => {})
+    const source1 = new ChangeSource("test.a", () => {})
+    const source2 = new ChangeSource("test.b", () => {})
+    const listener = new ChangeListener(() => {}, "TestDetect")
 
     source1.subscribe(listener)
     source2.subscribe(listener)

@@ -439,12 +439,13 @@ describe("Subscriptions", () => {
     })
   })
 
-  describe("Changes global API", () => {
-    it("should expose subscribe on Changes object", () => {
+  describe("Changes.create() API", () => {
+    it("should expose subscribe on ChangeDomain", () => {
+      const domain = Changes.create()
       const obj = { a: 1 }
       const changes: Change[] = []
 
-      const proxy = Changes.subscribe(obj, (change) => {
+      const proxy = domain.subscribe(obj, (change) => {
         changes.push(change)
       })
 
@@ -454,7 +455,8 @@ describe("Subscriptions", () => {
       assert.equal(changes[0]!.type, "ObjectSet")
     })
 
-    it("should expose unsubscribe on Changes object", () => {
+    it("should expose unsubscribe on ChangeDomain", () => {
+      const domain = Changes.create()
       const obj = { a: 1 }
       const changes: Change[] = []
 
@@ -462,11 +464,11 @@ describe("Subscriptions", () => {
         changes.push(change)
       }
 
-      const proxy = Changes.subscribe(obj, listener)
+      const proxy = domain.subscribe(obj, listener)
       proxy.a = 2
       assert.equal(changes.length, 1)
 
-      Changes.unsubscribe(proxy, listener)
+      domain.unsubscribe(proxy, listener)
       proxy.a = 3
       assert.equal(changes.length, 1)
     })
