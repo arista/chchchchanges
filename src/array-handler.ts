@@ -185,6 +185,12 @@ export function createArrayHandler(state: ChangeProxyState): ProxyHandler<object
       }
       return domain.withTransaction((t) => {
         notify(state, t)
+        t.notifySubscription(state, {
+          type: "ObjectSet",
+          target: state.proxy,
+          prop,
+          value: wrappedValue,
+        })
         return Reflect.set(target, prop, wrappedValue, receiver)
       })
     },
