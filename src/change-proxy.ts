@@ -32,6 +32,11 @@ export function enableChanges<T>(val: T, domain: ChangeDomain, name?: string): T
   if (val === null || val === undefined) return val
   if (typeof val !== "object" && typeof val !== "function") return val
 
+  // Pass through iterators — their .next() method requires `this` to be the
+  // actual iterator object, not a proxy. This covers generators, array iterators,
+  // map iterators, set iterators, etc.
+  if (typeof (val as { next?: unknown }).next === "function") return val
+
   // Check if already a proxy
   const existingState = getProxyState(val)
   if (existingState) {
