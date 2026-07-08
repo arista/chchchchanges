@@ -32,12 +32,36 @@ export class ChangeTransaction {
   }
 
   complete(): void {
-    for (let i = 0; i < this.afterNotifications.length; i++) {
-      this.afterNotifications[i]!()
-    }
-
-    for (let i = 0; i < this.subscriptionAfterCallbacks.length; i++) {
-      this.subscriptionAfterCallbacks[i]!()
+    // Drain both queues to a fixed point, preferring afterNotifications
+    // (reactive dependency callbacks) before subscriptionAfterCallbacks
+    // (subscribe() observers) within each wave.
+    //
+    // A single flat pass of each queue is not enough: a callback can enqueue
+    // more work into either queue while draining. Appending within the queue
+    // currently draining is fine (its loop re-reads length), but a
+    // subscription callback that mutates reactive state enqueues an
+    // afterNotification *after* that queue's loop has already finished. A flat
+    // two-loop drain would strand it — the dependency's listener was already
+    // consumed (listAndClearListeners + unsubscribe) to build a callback that
+    // then never runs, silently dropping the update and leaving the dependency
+    // detached. This is reachable whenever a subscribe() listener writes to a
+    // change-enabled object that has detectChanges/CachedFunction dependents
+    // (e.g. a derived reactive collection). Looping until both queues are
+    // exhausted keeps such late-enqueued work in the transaction. Cursors are
+    // monotonic, so each callback runs exactly once; a genuine propagation
+    // cycle would loop forever here, which is preferable to a silent drop.
+    let afterIndex = 0
+    let subscriptionIndex = 0
+    while (
+      afterIndex < this.afterNotifications.length ||
+      subscriptionIndex < this.subscriptionAfterCallbacks.length
+    ) {
+      while (afterIndex < this.afterNotifications.length) {
+        this.afterNotifications[afterIndex++]!()
+      }
+      while (subscriptionIndex < this.subscriptionAfterCallbacks.length) {
+        this.subscriptionAfterCallbacks[subscriptionIndex++]!()
+      }
     }
 
     for (const source of this.changeSources) {

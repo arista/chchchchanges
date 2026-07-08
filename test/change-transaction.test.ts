@@ -44,11 +44,14 @@ describe("ChangeTransaction", () => {
     it("should call before-callback immediately during notify", () => {
       const source = makeSource()
       const order: string[] = []
-      const listener = new ChangeListener({
-        before: () => {
-          order.push("before")
+      const listener = new ChangeListener(
+        {
+          before: () => {
+            order.push("before")
+          },
         },
-      }, "TestDetect")
+        "TestDetect",
+      )
       source.subscribe(listener)
 
       const t = makeTransaction()
@@ -61,14 +64,17 @@ describe("ChangeTransaction", () => {
     it("should queue after-callback from before-callback return value", () => {
       const source = makeSource()
       const order: string[] = []
-      const listener = new ChangeListener({
-        before: () => {
-          order.push("before")
-          return () => {
-            order.push("after")
-          }
+      const listener = new ChangeListener(
+        {
+          before: () => {
+            order.push("before")
+            return () => {
+              order.push("after")
+            }
+          },
         },
-      }, "TestDetect")
+        "TestDetect",
+      )
       source.subscribe(listener)
 
       const t = makeTransaction()
@@ -98,11 +104,14 @@ describe("ChangeTransaction", () => {
     it("should queue {after} callback as after-notification", () => {
       const source = makeSource()
       const order: string[] = []
-      const listener = new ChangeListener({
-        after: () => {
-          order.push("after")
+      const listener = new ChangeListener(
+        {
+          after: () => {
+            order.push("after")
+          },
         },
-      }, "TestDetect")
+        "TestDetect",
+      )
       source.subscribe(listener)
 
       const t = makeTransaction()
@@ -289,6 +298,51 @@ describe("ChangeTransaction", () => {
       // source1 should NOT be removed because the after-callback re-added a listener
       assert.ok(!state1.removed)
     })
+
+    it("should drain after-notifications enqueued during subscription callbacks", () => {
+      // Regression: a subscription after-callback runs in the second drain loop
+      // and enqueues an after-notification (first queue). A flat two-loop drain
+      // would strand it; the fixed-point drain must still run it.
+      const order: number[] = []
+      const t = makeTransaction()
+      t.subscriptionAfterCallbacks.push(() => {
+        order.push(1)
+        t.afterNotifications.push(() => {
+          order.push(2)
+        })
+      })
+
+      t.complete()
+
+      assert.deepStrictEqual(order, [1, 2])
+    })
+
+    it("delivers detectChanges invalidation when a subscribe() callback mutates reactive state", () => {
+      // The real-world shape (a derived reactive collection): a subscribe()
+      // listener mirrors a change onto another change-enabled object that has a
+      // detectChanges dependent. The dependent's invalidation is enqueued during
+      // the subscription drain and must still fire within this transaction.
+      const domain = new ChangeDomain()
+      const src = domain.enableChanges({ n: 0 })
+      const derived = domain.enableChanges({ n: 0 })
+
+      domain.subscribe(src, () => {
+        derived.n = src.n
+      })
+
+      let runs = 0
+      domain.detectChanges(
+        () => derived.n,
+        () => {
+          runs++
+        },
+      )
+
+      src.n = 5
+
+      assert.equal(derived.n, 5)
+      assert.equal(runs, 1)
+    })
   })
 
   describe("nested before-callbacks", () => {
@@ -297,28 +351,34 @@ describe("ChangeTransaction", () => {
       const source2 = makeSource()
       const order: string[] = []
 
-      const listener2 = new ChangeListener({
-        before: () => {
-          order.push("before-2")
-          return () => {
-            order.push("after-2")
-          }
+      const listener2 = new ChangeListener(
+        {
+          before: () => {
+            order.push("before-2")
+            return () => {
+              order.push("after-2")
+            }
+          },
         },
-      }, "TestDetect2")
+        "TestDetect2",
+      )
       source2.subscribe(listener2)
 
       const t = makeTransaction()
 
-      const listener1 = new ChangeListener({
-        before: () => {
-          order.push("before-1")
-          // Nested notify during before-callback
-          t.notify(source2)
-          return () => {
-            order.push("after-1")
-          }
+      const listener1 = new ChangeListener(
+        {
+          before: () => {
+            order.push("before-1")
+            // Nested notify during before-callback
+            t.notify(source2)
+            return () => {
+              order.push("after-1")
+            }
+          },
         },
-      }, "TestDetect1")
+        "TestDetect1",
+      )
       source1.subscribe(listener1)
 
       t.notify(source1)
@@ -338,11 +398,14 @@ describe("ChangeTransaction", () => {
       const listener2 = new ChangeListener(() => {}, "TestDetect2")
       source2.subscribe(listener2)
 
-      const listener1 = new ChangeListener({
-        before: () => {
-          t.notify(source2)
+      const listener1 = new ChangeListener(
+        {
+          before: () => {
+            t.notify(source2)
+          },
         },
-      }, "TestDetect1")
+        "TestDetect1",
+      )
       source1.subscribe(listener1)
 
       t.notify(source1)
