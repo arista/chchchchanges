@@ -4,6 +4,10 @@ import { ChangeTransaction } from "./change-transaction.js"
 import { enableChanges, getProxyState } from "./change-proxy.js"
 import { createCachedFunction as createCF, type CachedFunction } from "./cached-function.js"
 import { createMappedArray as createMA } from "./mapped-array.js"
+import {
+  createControlledArray as createCA,
+  type ControlledArray,
+} from "./controlled-array.js"
 import type { SubscriptionListener } from "./change-types.js"
 import type { ChangesConfig, ChangeEventLogger } from "./change-event.js"
 
@@ -93,6 +97,10 @@ export class ChangeDomain {
 
   createMappedArray<T, U>(source: T[], fn: (item: T) => U): U[] {
     return createMA(this, source, fn)
+  }
+
+  createControlledArray<T>(initial?: readonly T[]): ControlledArray<T> {
+    return createCA(this, initial)
   }
 
   detectChanges<T>(f: () => T, onChange: ChangeCallback, name?: string): ChangeDetecting<T> {

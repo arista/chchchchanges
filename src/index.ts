@@ -18,6 +18,8 @@ export type {
 } from "./change-event.js"
 export type { CachedFunction, CachedFunctionListener } from "./cached-function.js"
 export { createMappedArray } from "./mapped-array.js"
+export { createControlledArray } from "./controlled-array.js"
+export type { ControlledArray, ControlledArrayEdit } from "./controlled-array.js"
 export { ChangeSource, ChangeListener } from "./change-source.js"
 export type { ChangeSubscription } from "./change-source.js"
 export { ChangeTransaction } from "./change-transaction.js"
