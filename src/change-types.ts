@@ -87,6 +87,17 @@ export interface ArrayUnshift {
   elements: unknown[]
 }
 
+export interface ArrayMove {
+  type: "ArrayMove"
+  target: unknown[]
+  // Relocate the element at `from` to `to`, where `to` is interpreted as the
+  // index AFTER the element has been removed from `from` (splice semantics:
+  // `const [x] = arr.splice(from, 1); arr.splice(to, 0, x)`). The element keeps
+  // its identity — it is moved, not recreated.
+  from: number
+  to: number
+}
+
 // Map changes
 export interface MapClear {
   type: "MapClear"
@@ -140,6 +151,7 @@ export type Change =
   | ArrayShift
   | ArraySplice
   | ArrayUnshift
+  | ArrayMove
   | MapClear
   | MapDelete
   | MapSet

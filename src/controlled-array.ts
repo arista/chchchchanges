@@ -6,7 +6,9 @@ import type {
   ArrayUnshift,
   ArraySplice,
   ArrayReverse,
+  ArrayMove,
 } from "./change-types.js"
+import { applyArrayMove } from "./array-move.js"
 
 /**
  * An edit driven onto a controlled array by its owner. Mirrors the array
@@ -16,7 +18,7 @@ import type {
 type WithoutTarget<C> = C extends unknown ? Omit<C, "target"> : never
 
 export type ControlledArrayEdit = WithoutTarget<
-  ArrayPush | ArrayPop | ArrayShift | ArrayUnshift | ArraySplice | ArrayReverse
+  ArrayPush | ArrayPop | ArrayShift | ArrayUnshift | ArraySplice | ArrayReverse | ArrayMove
 >
 
 export interface ControlledArray<T> {
@@ -74,6 +76,11 @@ export function createControlledArray<T>(
         break
       case "ArrayReverse":
         array.reverse()
+        break
+      case "ArrayMove":
+        // A proxy cannot infer a move from raw mutations — this is the operation
+        // the controlled array exists to express. Emit it as one delta.
+        applyArrayMove(domain, array, edit.from, edit.to)
         break
     }
   }

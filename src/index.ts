@@ -48,6 +48,7 @@ export type {
   ArrayShift,
   ArraySplice,
   ArrayUnshift,
+  ArrayMove,
   MapClear,
   MapDelete,
   MapSet,

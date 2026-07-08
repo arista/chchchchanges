@@ -1,5 +1,6 @@
 import type { ChangeDomain } from "./change-domain.js"
 import type { Change, SubscriptionListener } from "./change-types.js"
+import { applyArrayMove } from "./array-move.js"
 
 /**
  * Create a derived array that stays in sync with `source` by applying `fn` to
@@ -65,6 +66,14 @@ export function createMappedArray<T, U>(
       case "ArrayReverse":
         // Reordering only — reuse the already-mapped values, don't re-run fn.
         out.reverse()
+        break
+
+      case "ArrayMove":
+        // Mapping is 1:1 and index-preserving, so the output moves at the same
+        // indices. Relocating (rather than re-mapping) keeps the mapped value's
+        // identity, and re-emits a single ArrayMove so downstream consumers can
+        // preserve it too.
+        applyArrayMove(domain, out, change.from, change.to)
         break
 
       case "ObjectSet": {
