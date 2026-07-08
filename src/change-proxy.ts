@@ -32,12 +32,13 @@ export function enableChanges<T>(val: T, domain: ChangeDomain, name?: string): T
   if (val === null || val === undefined) return val
   if (typeof val !== "object" && typeof val !== "function") return val
 
-  // Pass through iterators — their .next() method requires `this` to be the
-  // actual iterator object, not a proxy. This covers generators, array iterators,
-  // map iterators, set iterators, etc.
-  if (typeof (val as { next?: unknown }).next === "function") return val
-
-  // Check if already a proxy
+  // Return an already-enabled proxy immediately. This MUST come before the
+  // iterator probe below: reading CHANGE_PROXY_STATE does not create a
+  // subscription, but reading `.next` would go through the proxy's get trap and,
+  // for an array/map/set proxy, subscribe the current change context to the
+  // whole collection. That makes anything which merely re-wraps an already-
+  // enabled value (e.g. reading a reactive array off a change-enabled object)
+  // spuriously depend on the collection's structure.
   const existingState = getProxyState(val)
   if (existingState) {
     if (existingState.changeDomain !== domain) {
@@ -45,6 +46,11 @@ export function enableChanges<T>(val: T, domain: ChangeDomain, name?: string): T
     }
     return val
   }
+
+  // Pass through iterators — their .next() method requires `this` to be the
+  // actual iterator object, not a proxy. This covers generators, array iterators,
+  // map iterators, set iterators, etc.
+  if (typeof (val as { next?: unknown }).next === "function") return val
 
   // Check if target already has a proxy
   const targetState = proxyStateMap.get(val as object)

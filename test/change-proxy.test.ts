@@ -167,4 +167,51 @@ describe("enableChanges", () => {
       )
     })
   })
+
+  describe("re-wrapping an enabled collection", () => {
+    // Regression: reading a change-enabled array/map/set off a change-enabled
+    // object must NOT subscribe the current context to the collection's
+    // structure. enableChanges probes `.next` to pass iterators through; if that
+    // probe runs on an already-enabled proxy it goes through the get trap and
+    // subscribes to the whole collection. The already-a-proxy check must come
+    // first so re-wrapping never touches `.next`.
+    it("reading a nested reactive array does not depend on its structure", () => {
+      const domain = new ChangeDomain()
+      // Store an already-enabled array, as a derived reactive collection would be.
+      const arr = domain.enableChanges([1, 2, 3])
+      const obj = domain.enableChanges({ arr })
+
+      let runs = 0
+      domain.detectChanges(
+        () => {
+          void obj.arr // read the reference only, as a component passing it along would
+        },
+        () => {
+          runs++
+        },
+      )
+
+      arr.push(4) // structural change to the array
+      assert.equal(runs, 0)
+    })
+
+    it("still re-runs when the property itself is reassigned", () => {
+      const domain = new ChangeDomain()
+      const arr = domain.enableChanges([1, 2, 3])
+      const obj = domain.enableChanges<{ arr: number[] }>({ arr })
+
+      let runs = 0
+      domain.detectChanges(
+        () => {
+          void obj.arr
+        },
+        () => {
+          runs++
+        },
+      )
+
+      obj.arr = [9] // reassignment fires the property source
+      assert.equal(runs, 1)
+    })
+  })
 })
