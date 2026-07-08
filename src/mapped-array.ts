@@ -23,7 +23,7 @@ import { applyArrayMove } from "./array-move.js"
  */
 export function createMappedArray<T, U>(
   domain: ChangeDomain,
-  source: T[],
+  source: readonly T[],
   fn: (item: T) => U,
 ): U[] {
   const out = domain.enableChanges(source.map(fn))

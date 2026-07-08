@@ -4,10 +4,7 @@ import { ChangeTransaction } from "./change-transaction.js"
 import { enableChanges, getProxyState } from "./change-proxy.js"
 import { createCachedFunction as createCF, type CachedFunction } from "./cached-function.js"
 import { createMappedArray as createMA } from "./mapped-array.js"
-import {
-  createControlledArray as createCA,
-  type ControlledArray,
-} from "./controlled-array.js"
+import { emitArrayChangeOnBehalfOf as emitArrayChangeImpl, type ArrayEdit } from "./emit-array-change.js"
 import type { SubscriptionListener } from "./change-types.js"
 import type { ChangesConfig, ChangeEventLogger } from "./change-event.js"
 
@@ -95,12 +92,12 @@ export class ChangeDomain {
     return createCF(this, fn, name)
   }
 
-  createMappedArray<T, U>(source: T[], fn: (item: T) => U): U[] {
+  createMappedArray<T, U>(source: readonly T[], fn: (item: T) => U): U[] {
     return createMA(this, source, fn)
   }
 
-  createControlledArray<T>(initial?: readonly T[]): ControlledArray<T> {
-    return createCA(this, initial)
+  emitArrayChangeOnBehalfOf(array: readonly unknown[], edit: ArrayEdit): void {
+    emitArrayChangeImpl(this, array, edit)
   }
 
   detectChanges<T>(f: () => T, onChange: ChangeCallback, name?: string): ChangeDetecting<T> {

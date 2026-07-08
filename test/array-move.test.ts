@@ -79,18 +79,14 @@ describe("applyArrayMove", () => {
   })
 })
 
-describe("move through controlled + mapped arrays", () => {
+describe("move through an owner-driven view + mapped array", () => {
   it("relays a move end to end as a single delta, without re-running fn", () => {
     const domain = new ChangeDomain()
-    const { array, emit } = domain.createControlledArray<Item>([
-      { id: 1 },
-      { id: 2 },
-      { id: 3 },
-      { id: 4 },
-    ])
+    const backing: Item[] = [{ id: 1 }, { id: 2 }, { id: 3 }, { id: 4 }]
+    const view = domain.enableChanges(backing)
 
     let calls = 0
-    const out = domain.createMappedArray(array, (i) => {
+    const out = domain.createMappedArray(view, (i) => {
       calls++
       return { label: `#${i.id}` }
     })
@@ -100,7 +96,10 @@ describe("move through controlled + mapped arrays", () => {
     const deltas: Change[] = []
     domain.subscribe(out, (c) => deltas.push(c))
 
-    emit({ type: "ArrayMove", from: 0, to: 2 })
+    // Owner moves the item in its backing, then announces a single move.
+    const [x] = backing.splice(0, 1)
+    backing.splice(2, 0, x)
+    domain.emitArrayChangeOnBehalfOf(view, { type: "ArrayMove", from: 0, to: 2 })
 
     // Output contents moved to match.
     assert.deepEqual(

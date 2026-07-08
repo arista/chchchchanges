@@ -1,5 +1,6 @@
 import type { ChangeDomain } from "./change-domain.js"
 import { getProxyState } from "./change-proxy.js"
+import { emitArrayChangeOnBehalfOf } from "./emit-array-change.js"
 
 /**
  * Move the element at `from` to `to` on a change-enabled array, delivering a
@@ -10,10 +11,9 @@ import { getProxyState } from "./change-proxy.js"
  * what lets downstream consumers (mapped arrays, renderers) preserve the
  * element's derived value and its DOM across the move.
  *
- * The relocation runs through the array's own splice traps so the backing
- * contents and any detectChanges dependents that iterated the array stay
- * correct; the two ArraySplice subscription deltas those splices would emit are
- * suppressed and replaced by one ArrayMove.
+ * The relocation is applied to the array's backing directly (reusing the
+ * existing element, so no new wrapping), then announced as one ArrayMove via
+ * emitArrayChangeOnBehalfOf — which also invalidates detectChanges dependents.
  */
 export function applyArrayMove(
   domain: ChangeDomain,
@@ -31,11 +31,8 @@ export function applyArrayMove(
     return
   }
 
-  domain.withTransaction((t) => {
-    t.withSuppressedObjectChanges(state, () => {
-      const [x] = array.splice(from, 1)
-      array.splice(to, 0, x)
-    })
-    t.notifySubscription(state, { type: "ArrayMove", target: array, from, to })
-  })
+  const backing = state.target as unknown[]
+  const [x] = backing.splice(from, 1)
+  backing.splice(to, 0, x)
+  emitArrayChangeOnBehalfOf(domain, array, { type: "ArrayMove", from, to })
 }
