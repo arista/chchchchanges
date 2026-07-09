@@ -18,6 +18,24 @@ export interface ChangeProxyState {
 
 const proxyStateMap = new WeakMap<object, ChangeProxyState>()
 
+const rawValues = new WeakSet<object>()
+
+/**
+ * Mark an object as raw: enableChanges will return it untouched and never proxy
+ * it or (by extension) anything reached through it. Use this for objects that
+ * manage their own state/reactivity and must not be deep-proxied when they
+ * happen to be nested inside change-enabled state (e.g. a self-contained
+ * reactive data structure). Returns the same object for convenient chaining.
+ */
+export function markRaw<T extends object>(value: T): T {
+  rawValues.add(value)
+  return value
+}
+
+export function isMarkedRaw(value: unknown): boolean {
+  return typeof value === "object" && value !== null && rawValues.has(value)
+}
+
 export function getProxyState(val: unknown): ChangeProxyState | undefined {
   if (val == null || typeof val !== "object") return undefined
   return (val as Record<symbol, ChangeProxyState | undefined>)[CHANGE_PROXY_STATE]
@@ -31,6 +49,10 @@ export function enableChanges<T>(val: T, domain: ChangeDomain, name?: string): T
   // Pass through primitives and null/undefined
   if (val === null || val === undefined) return val
   if (typeof val !== "object" && typeof val !== "function") return val
+
+  // Pass through values explicitly marked raw — they manage their own state and
+  // must never be proxied.
+  if (rawValues.has(val as object)) return val
 
   // Return an already-enabled proxy immediately. This MUST come before the
   // iterator probe below: reading CHANGE_PROXY_STATE does not create a

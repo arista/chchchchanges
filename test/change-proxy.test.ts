@@ -1,7 +1,7 @@
 import { describe, it } from "node:test"
 import assert from "node:assert/strict"
 import { ChangeDomain } from "../src/change-domain.js"
-import { CHANGE_PROXY_STATE, getProxyState } from "../src/change-proxy.js"
+import { CHANGE_PROXY_STATE, getProxyState, markRaw } from "../src/change-proxy.js"
 import type { ChangeProxyState } from "../src/change-proxy.js"
 
 describe("enableChanges", () => {
@@ -137,6 +137,25 @@ describe("enableChanges", () => {
       assert.equal(getProxyState("hello"), undefined)
       assert.equal(getProxyState(null), undefined)
       assert.equal(getProxyState(undefined), undefined)
+    })
+  })
+
+  describe("markRaw", () => {
+    it("returns a marked object untouched from enableChanges", () => {
+      const domain = new ChangeDomain()
+      const raw = markRaw({ internal: { deep: 1 } })
+      const proxy = domain.enableChanges(raw)
+      assert.equal(proxy, raw)
+      assert.equal(getProxyState(proxy), undefined)
+    })
+
+    it("leaves a marked object raw when nested in change-enabled state", () => {
+      const domain = new ChangeDomain()
+      const raw = markRaw({ n: 1 })
+      const state = domain.enableChanges({ raw })
+      // Reached through the proxy, but not itself proxied.
+      assert.equal(state.raw, raw)
+      assert.equal(getProxyState(state.raw), undefined)
     })
   })
 
