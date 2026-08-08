@@ -147,6 +147,20 @@ export function createObjectHandler(state: ChangeProxyState): ProxyHandler<objec
         if (desc && !desc.configurable && "value" in desc && !desc.writable) {
           return value
         }
+        // Inherited methods are class-level code, not per-instance state: one
+        // function object serves every instance in the process. Associating it
+        // with a domain therefore associates the *class* with that domain, and
+        // the second domain to read the same method throws "already associated
+        // with a different ChangeDomain" — so two domains could never coexist
+        // over instances of one class. Return it unwrapped.
+        //
+        // Reactivity is unaffected. `proxy.method()` still calls with `this`
+        // bound to the proxy, so reads and writes inside the method go through
+        // the traps exactly as before; only the function object itself stops
+        // being claimed.
+        if (typeof value === "function" && desc === undefined) {
+          return value
+        }
       }
       // Chain the name for nested objects
       const childName = `${state.name}.${String(prop)}`
