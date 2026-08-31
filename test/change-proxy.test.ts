@@ -234,3 +234,132 @@ describe("enableChanges", () => {
     })
   })
 })
+
+describe("objects with internal slots pass through unproxied", () => {
+  // A Proxy has no [[DateValue]], [[RegExpMatcher]], [[WeakMapData]] and so on,
+  // so wrapping one of these does not degrade it - it breaks every method that
+  // reads the slot. `instanceof` still passes, which is why this was silent.
+
+  it("returns a Date unwrapped, with its methods intact", () => {
+    const domain = new ChangeDomain()
+    const date = new Date("2026-01-02T03:04:05Z")
+    const enabled = domain.enableChanges(date)
+
+    assert.equal(enabled, date)
+    assert.equal(getProxyState(enabled), undefined)
+    assert.equal(enabled.getTime(), date.getTime())
+    assert.equal(enabled.toISOString(), "2026-01-02T03:04:05.000Z")
+  })
+
+  it("leaves a Date reached through a change-enabled object usable", () => {
+    const domain = new ChangeDomain()
+    const date = new Date("2026-01-02T03:04:05Z")
+    const obj = domain.enableChanges({ createdAt: date })
+
+    // Identity is what a snapshot diff compares on, so this is the assertion
+    // that keeps an unchanged timestamp from reading as a change.
+    assert.equal(obj.createdAt, date)
+    assert.equal(obj.createdAt.getTime(), date.getTime())
+    assert.equal(JSON.stringify({ d: obj.createdAt }), `{"d":"2026-01-02T03:04:05.000Z"}`)
+    assert.equal(obj.createdAt < new Date("2027-01-01T00:00:00Z"), true)
+  })
+
+  it("returns a RegExp unwrapped, with its methods intact", () => {
+    const domain = new ChangeDomain()
+    const re = /^ab+c$/
+    const enabled = domain.enableChanges(re)
+
+    assert.equal(enabled, re)
+    assert.equal(enabled.test("abbc"), true)
+  })
+
+  it("returns WeakMap and WeakSet unwrapped - neither has a handler", () => {
+    const domain = new ChangeDomain()
+    const key = {}
+    const wm = new WeakMap<object, number>()
+    const ws = new WeakSet<object>()
+
+    const enabledWm = domain.enableChanges(wm)
+    const enabledWs = domain.enableChanges(ws)
+
+    assert.equal(enabledWm, wm)
+    assert.equal(enabledWs, ws)
+    enabledWm.set(key, 1)
+    enabledWs.add(key)
+    assert.equal(enabledWm.get(key), 1)
+    assert.equal(enabledWs.has(key), true)
+  })
+
+  it("returns a typed array and a Promise unwrapped", () => {
+    const domain = new ChangeDomain()
+    const bytes = new Uint8Array([1, 2, 3])
+    const promise = Promise.resolve(1)
+
+    assert.equal(domain.enableChanges(bytes), bytes)
+    assert.equal(domain.enableChanges(promise), promise)
+  })
+
+  it("still wraps the four shapes that do have handlers", () => {
+    const domain = new ChangeDomain()
+    const obj = {}
+    const arr: number[] = []
+    const map = new Map()
+    const set = new Set()
+
+    assert.notEqual(domain.enableChanges(obj), obj)
+    assert.notEqual(domain.enableChanges(arr), arr)
+    assert.notEqual(domain.enableChanges(map), map)
+    assert.notEqual(domain.enableChanges(set), set)
+  })
+
+  it("still wraps class instances", () => {
+    // Object.prototype.toString reports [object Object] for a class instance,
+    // so the allow-list keeps them. Generated entity classes depend on this.
+    class Entity {
+      id = "a"
+      createdAt = new Date("2026-01-02T03:04:05Z")
+    }
+    const domain = new ChangeDomain()
+    const entity = new Entity()
+    const enabled = domain.enableChanges(entity)
+
+    assert.notEqual(enabled, entity)
+    assert.notEqual(getProxyState(enabled), undefined)
+    // ...and the Date it holds is still not wrapped
+    assert.equal(enabled.createdAt, entity.createdAt)
+    assert.equal(enabled.createdAt.getTime(), entity.createdAt.getTime())
+  })
+
+  it("does not wrap an object that sets Symbol.toStringTag - known and accepted", () => {
+    // The one cost of using Object.prototype.toString as the test. Nothing in
+    // these repos sets a toStringTag; recorded so the behavior is a decision
+    // rather than a surprise.
+    const domain = new ChangeDomain()
+    const tagged = { [Symbol.toStringTag]: "Custom", a: 1 }
+
+    assert.equal(domain.enableChanges(tagged), tagged)
+  })
+
+  it("still reports assignment of an unproxied value", () => {
+    // The value passes through; the *property set* is still a change. This is
+    // what a flush needs in order to see a timestamp column move.
+    const domain = new ChangeDomain()
+    const obj = domain.enableChanges<{ createdAt: Date }>({
+      createdAt: new Date("2026-01-02T03:04:05Z"),
+    })
+
+    let runs = 0
+    domain.detectChanges(
+      () => {
+        void obj.createdAt
+      },
+      () => {
+        runs++
+      },
+    )
+
+    obj.createdAt = new Date("2026-06-07T08:09:10Z")
+    assert.equal(runs, 1)
+    assert.equal(obj.createdAt.toISOString(), "2026-06-07T08:09:10.000Z")
+  })
+})

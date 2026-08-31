@@ -36,6 +36,38 @@ export function isMarkedRaw(value: unknown): boolean {
   return typeof value === "object" && value !== null && rawValues.has(value)
 }
 
+/**
+ * Whether an object is one of the four shapes we have a handler for.
+ *
+ * This is an allow-list, and it has to be. Proxying an object with internal
+ * slots does not degrade it, it *breaks* it: `Date.prototype.getTime` and
+ * friends read `[[DateValue]]` off `this`, and a Proxy has no such slot, so
+ * every method throws "this is not a Date object" — including the ones nothing
+ * calls explicitly, so `JSON.stringify` and `<` on a wrapped Date throw too.
+ * `instanceof Date` still passes, because the prototype chain is intact, which
+ * is why this failed silently until something called a method.
+ *
+ * The same applies to `RegExp`, `URL`, `Promise`, `WeakMap`/`WeakSet`, typed
+ * arrays and `Error`. A block-list of those would be a list that is wrong the
+ * next time the platform adds an exotic type, so the test is the other way
+ * round: wrap what we handle, pass through everything else.
+ *
+ * Class instances are still wrapped — `Object.prototype.toString` reports
+ * `[object Object]` for them, since only a `Symbol.toStringTag` changes that.
+ * An object that sets `toStringTag` therefore stops being proxied; nothing in
+ * chchchchanges, multindex, brint, hanbok or taterhome sets one, and a class
+ * that wants both can `markRaw` deliberately or drop the tag.
+ *
+ * Functions do not come through here: `enableChanges` accepts them and they
+ * keep their existing object-handler treatment, which this does not change.
+ */
+function isProxyableObject(val: object): boolean {
+  if (Array.isArray(val)) return true
+  if (val instanceof Map) return true
+  if (val instanceof Set) return true
+  return Object.prototype.toString.call(val) === "[object Object]"
+}
+
 export function getProxyState(val: unknown): ChangeProxyState | undefined {
   if (val == null || typeof val !== "object") return undefined
   return (val as Record<symbol, ChangeProxyState | undefined>)[CHANGE_PROXY_STATE]
@@ -73,6 +105,11 @@ export function enableChanges<T>(val: T, domain: ChangeDomain, name?: string): T
   // actual iterator object, not a proxy. This covers generators, array iterators,
   // map iterators, set iterators, etc.
   if (typeof (val as { next?: unknown }).next === "function") return val
+
+  // Pass through objects we have no handler for. See isProxyableObject: the
+  // iterator check above is the same rule found one exotic type at a time, and
+  // this subsumes it.
+  if (typeof val === "object" && !isProxyableObject(val as object)) return val
 
   // Check if target already has a proxy
   const targetState = proxyStateMap.get(val as object)
